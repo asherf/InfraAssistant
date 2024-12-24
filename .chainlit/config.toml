@@ -1,0 +1,55 @@
+[project]
+# Whether to enable telemetry (default: true). No personal data is collected.
+enable_telemetry = true
+
+# List of environment variables to be provided by each user to use the app
+user_env = []
+
+# Duration (in seconds) during which the session is saved when the connection is lost
+session_timeout = 3600
+
+# Enable third parties caching (e.g LangChain cache)
+cache = false
+
+# Authorize users to upload files with these extensions
+upload_file_extensions = []
+
+[UI]
+# Name of the app and chatbot
+name = "InfraAssistant"
+
+# Description of the app and chatbot
+description = "A tool to help manage infrastructure resources efficiently"
+
+# Hide the chain of thought details from the user
+hide_cot = false
+
+# Show the copy button on code blocks
+show_copy_button = true
+
+# The default value for the expand messages settings
+default_expand_messages = false
+
+# The theme to use
+theme = "light"
+
+# The default chat profile to use. If not set, the first chat profile will be used.
+default_chat_profile = ""
+
+# Show the prompt playground
+show_prompt_playground = false
+
+# Display the chat history button
+show_chat_history = true
+
+# Display the settings button
+show_settings = true
+
+# Display the chat profiles button
+show_chat_profiles = true
+
+# Display the new chat button
+show_new_chat = true
+
+[meta]
+generated_by = "0.7.700"
