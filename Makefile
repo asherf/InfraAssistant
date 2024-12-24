@@ -8,4 +8,4 @@ bootstrap:
 	uv sync
 
 run:
-	uv run src/main.py
+	uv run uvicorn src.main:app  --port 8080
