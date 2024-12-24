@@ -1,6 +1,7 @@
 import chainlit as cl
-
 from dotenv import load_dotenv
+
+from assistant.logic.api import process_message
 
 load_dotenv()
 
@@ -36,4 +37,5 @@ async def set_starters():
 @cl.on_message
 async def on_message(message: str):
     """Handles incoming chat messages"""
-    await cl.Message(content=f"You said: {message.content}").send()
+    response = process_message(message.content)
+    await cl.Message(content=response).send()

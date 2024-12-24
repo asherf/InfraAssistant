@@ -1,5 +1,5 @@
 fmt:
-	ruff check . --fix
+	ruff check . --fix --select I
 	ruff format
 
 lint:

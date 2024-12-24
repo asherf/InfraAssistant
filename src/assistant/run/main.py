@@ -1,7 +1,8 @@
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import RedirectResponse
 from chainlit.utils import mount_chainlit
+from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
+
 from assistant.run import core as assistant_core
 
 app = FastAPI()
