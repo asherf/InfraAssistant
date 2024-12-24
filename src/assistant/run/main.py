@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from chainlit.utils import mount_chainlit
+from assistant.run import core as assistant_core
 
 app = FastAPI()
 
@@ -20,4 +21,4 @@ def redirect_to_cl():
 
 
 app.mount("/icons", StaticFiles(directory="assets/public/icons"), name="icons")
-mount_chainlit(app=app, target="src/core.py", path=_CHAINLIT_PATH)
+mount_chainlit(app=app, target=assistant_core.__file__, path=_CHAINLIT_PATH)

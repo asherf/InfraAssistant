@@ -9,4 +9,4 @@ bootstrap:
 	uv sync
 
 run:
-	uv run uvicorn src.main:app  --port 8080
+	PYTHONPATH=src:$PYTHONPATH uv run uvicorn assistant.run.main:app  --port 8080
