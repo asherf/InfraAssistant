@@ -8,14 +8,15 @@ app = FastAPI()
 
 _CHAINLIT_PATH = "/cl"
 
+
 @app.get("/app")
 def read_main():
     return {"message": "Hello World from main app"}
 
+
 @app.get("/")
 def redirect_to_cl():
     return RedirectResponse(url=_CHAINLIT_PATH)
-
 
 
 app.mount("/icons", StaticFiles(directory="assets/public/icons"), name="icons")
