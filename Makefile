@@ -10,3 +10,6 @@ bootstrap:
 
 run:
 	PYTHONPATH=src:$PYTHONPATH uv run uvicorn assistant.run.main:app  --port 8080  --reload
+
+shell:
+	PYTHONPATH=src:$PYTHONPATH uv run ipython
