@@ -1,9 +1,12 @@
+import json
 import logging
+from pathlib import Path
 
 import litellm
 from chainlit import MessageBase
 
-# from langsmith import traceable
+from . import prompts
+from .tools import validate_function_def
 
 _logger = logging.getLogger(__name__)
 
@@ -29,8 +32,19 @@ CURRENT_MODEL = CLAUDE_MODEL  # Change this to the model you want to use
 SUPPORT_SYSTEM_MESSAGE = CURRENT_MODEL != CLAUDE_MODEL
 
 
-def get_system_prompt():
-    pass
+def _get_function_defs(name: str):
+    defs_path = Path(__file__).parent / f"{name}-function-defs.json"
+    function_defs = json.loads(defs_path.read_text())
+    for fn in function_defs:
+        validate_function_def(fn)
+    return json.dumps(function_defs, indent=2)
+
+
+def get_promql_alerts_rules_assistant_prompt():
+    function_defs = _get_function_defs("metrics")
+    return prompts.PROMQL_ALERTS_RULES_ASSISTANT_PROMPT.format(
+        prometheus_functions=function_defs
+    )
 
 
 class LLMSession:
