@@ -1,8 +1,8 @@
 import httpx
 
 
-def get_prometheus_client():
-    return PrometheusClient(base_url="http://localhost:9095")
+def get_prometheus_client(port: int = 9095):
+    return PrometheusClient(base_url=f"http://localhost:{port}")
 
 
 class PrometheusClient:
@@ -29,9 +29,8 @@ class PrometheusClient:
             raise ValueError(f"No rules found for alert {alertname}")
         alert_rule = groups[0]["rules"][0]
         return alert_rule["query"]
-    
+
     def query(self, promql_query: str) -> list[dict]:
         response = self._client.get("/api/v1/query", params={"query": promql_query})
         response.raise_for_status()
         return response.json()
-
