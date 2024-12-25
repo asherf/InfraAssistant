@@ -1,0 +1,30 @@
+{
+
+    "get_alerts": {
+        "description": "Gets a list of currently firing alerts from Prometheus",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
+    "get_alert_query": {
+        "description": "Gets the PromQL query associated with an alert",
+        "parameters": {
+            "type": "object", 
+            "properties": {
+                "alert": {
+                    "type": "object",
+                    "description": "Alert object containing labels"
+                }
+            },
+            "required": ["alert"]
+        }
+    }
+        "description": "Fetches a list of movies currently playing in theaters",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    }

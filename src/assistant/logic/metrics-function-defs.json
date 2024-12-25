@@ -1,0 +1,48 @@
+{
+
+    "query": {
+        "description": "Runs a PromQL query against the Prometheus instance",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "PromQL query to run"
+                }
+            },
+            "required": [
+                "query"
+            ]
+        }
+    },
+    "get_metric_labels": {
+        "description": "Gets all label names for a metric",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "metric_name": {
+                    "type": "string",
+                    "description": "Name of the metric to get labels for"
+                }
+            },
+            "required": ["metric_name"]
+        }
+    },
+    "get_metric_label_values": {
+        "description": "Gets all values for a specific label of a metric",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "metric_name": {
+                    "type": "string", 
+                    "description": "Name of the metric"
+                },
+                "label_name": {
+                    "type": "string",
+                    "description": "Name of the label to get values for"
+                }
+            },
+            "required": ["metric_name", "label_name"]
+        }
+    }
+}
