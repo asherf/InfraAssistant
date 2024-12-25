@@ -1,0 +1,6 @@
+ALERTS_PROMPRT_V1 = """
+"""
+
+
+PROMQL_PROMPT_V1 = """
+"""
