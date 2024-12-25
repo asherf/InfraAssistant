@@ -1,7 +1,8 @@
+import logging
 import threading
 import time
-import logging
-from kubernetes import config, client
+
+from kubernetes import client, config
 from kubernetes.stream import portforward
 
 _logger = logging.getLogger(__name__)
