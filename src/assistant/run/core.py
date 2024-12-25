@@ -14,8 +14,8 @@ def get_icon_path(name: str) -> str:
 async def set_starters():
     return [
         cl.Starter(
-            label="Help with PromQL",
-            message="I can help you with PromQL queries. What do you need help with?",
+            label="Help with generating PromQL based alerts rules",
+            message="I can help you generate PromQL based alerts rules. What do you need help with?",
             icon=get_icon_path("prometheus"),
         ),
         cl.Starter(
