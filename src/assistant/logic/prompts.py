@@ -23,9 +23,10 @@ You will receive a <function_result> in response to your call, containing inform
 The process for creating an alerting rule is as follows:
 1. Analyze the user-provided metric names
 2. Use the get_metric_metadata, get_metric_labels and get_metric_label_values to fetch recent data for the metrics and better understand them
-3. Formulate a PromQL query to query for metric values, use the query function to execute the query
-4. Formulate a PromQL query that captures the alert condition, use the query function to execute the query
-5. Create an alerting rule using the PromQL query
+3. use the <scratchpad> to describe your understanding of the metrics.
+4. Formulate a PromQL query to query for metric values, use the query function to execute the query
+5. Formulate a PromQL query that captures the alert condition, use the query function to execute the query
+6. Create an alerting rule using the PromQL query
 
 When thinking through this process, use a <scratchpad> to organize your thoughts and plan your approach. 
 
