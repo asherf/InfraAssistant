@@ -15,6 +15,19 @@
             ]
         }
     },
+    "get_metric_metadata": {
+        "description": "Gets metadata for a metric",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "metric_name": {
+                    "type": "string",
+                    "description": "Name of the metric to get metadata for"
+                }
+            },
+            "required": ["metric_name"]
+        }
+    },
     "get_metric_labels": {
         "description": "Gets all label names for a metric",
         "parameters": {
