@@ -1,7 +1,8 @@
 import chainlit as cl
 from dotenv import load_dotenv
+from langsmith import traceable
 
-from assistant.logic.api import process_message
+from assistant.logic.llm import new_llm_session
 
 load_dotenv()
 
@@ -26,16 +27,15 @@ async def set_starters():
     ]
 
 
-# @cl.on_chat_start
-# async def chat_start():
-#     """Runs at the start of a new chat session"""
-#     await cl.Message(
-#         content="Hello! I'm ready to chat. How can I help you today?"
-#     ).send()
+@traceable
+@cl.on_chat_start
+def on_chat_start():
+    session = new_llm_session(cl.user_session.id)
+    cl.user_session.set("llm_session", session)
 
 
 @cl.on_message
 async def on_message(message: str):
-    """Handles incoming chat messages"""
-    response = process_message(message.content)
+    session = cl.user_session.get("llm_session")
+    response = session.process_message(message.content)
     await cl.Message(content=response).send()

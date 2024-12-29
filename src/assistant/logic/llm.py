@@ -47,10 +47,21 @@ def get_promql_alerts_rules_assistant_prompt():
     )
 
 
+def new_llm_session(session_id: str):
+    _logger.info(f"Creating new LLM session for {session_id}")
+    return LLMSession(
+        session_id=session_id, system_prompt=get_promql_alerts_rules_assistant_prompt()
+    )
+
+
 class LLMSession:
-    def __init__(self, session_id: str) -> None:
+    def __init__(self, *, session_id: str, system_prompt: str) -> None:
         self._session_id = session_id
-        self._message_history = []  # TODO: init w/ system prompt
+        self._system_prompt = system_prompt
+        self._message_history = [{"role": "system", "content": system_prompt}]
+
+    def process_message(self, message: str):
+        return f"You said: {message}"
 
     async def llm_stream_call(
         self,
