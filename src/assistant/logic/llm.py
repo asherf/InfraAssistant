@@ -77,17 +77,18 @@ class LLMSession:
     async def process_message(
         self, *, incoming_message: str, response_msg: MessageBase
     ):
+        await self.llm_stream_call(
+            response_msg=response_msg, role="user", message_content=incoming_message
+        )
         # response_msg.content = f"You said: {incoming_message}"
         remaining_calls = MAX_FUNCTION_CALLS_PER_MESSAGE
         while remaining_calls > 0:
-            await self.llm_stream_call(
-                response_msg=response_msg,
-                role="user",
-                message_content=incoming_message,
-            )
             response_content = response_msg.content
             fc = extract_json_tag_content(response_content, "function_call")
             if not fc:
+                _logger.info(
+                    f"No function call found in the response: {response_content}"
+                )
                 break
             api_response = self.call_api(fc)
             _logger.info(
@@ -96,6 +97,9 @@ class LLMSession:
             if not api_response:
                 break
             remaining_calls -= 1
+            response_content = await self.llm_stream_call(
+                response_msg=response_msg, role="user", message_content=api_response
+            )
 
     async def llm_stream_call(
         self,
@@ -136,4 +140,5 @@ class LLMSession:
     def call_api(self, fc: dict):
         # TODO: based on the session type (promql/alerts), using the right tool call
         # TODO: all of this needs to be async, probably.
+        # TODO: hannle errors
         return call_prometheus_function(fc)
