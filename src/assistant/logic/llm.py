@@ -69,7 +69,6 @@ class LLMSession:
         mh_path = Path(".message_history")
         mh_path.mkdir(parents=True, exist_ok=True)
         self._message_history_store = mh_path / f"{session_id}.json"
-        self._system_prompt = system_prompt
         self._message_history = [{"role": "system", "content": system_prompt}]
         self.validate_api_readiness()
 
@@ -106,7 +105,7 @@ class LLMSession:
         _logger.info(
             f"LLM call: {role} - {message_content[:30]}... ({len(message_content)}) - history: {len(self._message_history)}"
         )
-
+        response_msg.content = ""
         response = litellm.completion(
             model=CURRENT_MODEL,
             supports_system_message=SUPPORT_SYSTEM_MESSAGE,
@@ -137,4 +136,5 @@ class LLMSession:
         return call_prometheus_function(fc)
 
     def _save_message_history(self) -> None:
-        self._message_history_store.write_text(json.dumps(self._message_history, indent=2))
+        # Don't store the system prompt in the message history
+        self._message_history_store.write_text(json.dumps(self._message_history[1:], indent=2))

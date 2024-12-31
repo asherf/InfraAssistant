@@ -1,3 +1,5 @@
+import logging
+
 import chainlit as cl
 from chainlit.context import context as cl_context
 from dotenv import load_dotenv
@@ -6,6 +8,8 @@ from langsmith import traceable
 from assistant.logic.llm import new_llm_session
 
 load_dotenv()
+
+_logger = logging.getLogger(__name__)
 
 
 def get_icon_path(name: str) -> str:
@@ -50,8 +54,9 @@ def get_user_msg(msg: str) -> str:
 
 @cl.on_message
 async def on_message(message: str):
-    session = cl.user_session.get("llm_session")
+    llm_session = cl.user_session.get("llm_session")
     response_message = cl.Message(content="")
     user_msg = get_user_msg(message.content)
-    await session.process_message(incoming_message=user_msg, response_msg=response_message)
+    _logger.info(f"Processing message: {user_msg}")
+    await llm_session.process_message(incoming_message=user_msg, response_msg=response_message)
     await response_message.send()
