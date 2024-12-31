@@ -35,11 +35,25 @@ def on_chat_start():
     cl.user_session.set("llm_session", session)
 
 
+DEFINE_AWS_ALB_ALERT_RULE_MACRO = """
+using the following metrics: aws_applicationelb_httpcode_target_4_xx_count_sum and aws_applicationelb_request_count_sum 
+define an alerting rule for the following that will fire when the rate of 4xx errors is greater than 10% of the total requests.
+"""
+
+
+def get_user_msg(msg: str) -> str:
+    # just some macros for me, since I am lazy AF
+    if msg == "al1":
+        return DEFINE_AWS_ALB_ALERT_RULE_MACRO
+    return msg
+
+
 @cl.on_message
 async def on_message(message: str):
     session = cl.user_session.get("llm_session")
     response_message = cl.Message(content="")
+    user_msg = get_user_msg(message.content)
     await session.process_message(
-        incoming_message=message.content, response_msg=response_message
+        incoming_message=user_msg, response_msg=response_message
     )
     await response_message.send()
