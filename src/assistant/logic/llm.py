@@ -43,7 +43,15 @@ def _get_function_defs(name: str):
 def get_promql_alerts_rules_assistant_prompt():
     function_defs = _get_function_defs("metrics")
     return prompts.PROMQL_ALERTS_RULES_ASSISTANT_PROMPT.format(
-        prometheus_functions=function_defs
+        prometheus_functions=function_defs,
+        example_function_call=json.dumps(
+            {
+                "name": "query",
+                "arguments": {
+                    "query": "rate(aws_applicationelb_httpcode_elb_4_xx_count_sum[5m])"
+                },
+            }
+        ),
     )
 
 

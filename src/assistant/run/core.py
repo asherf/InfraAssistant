@@ -1,4 +1,5 @@
 import chainlit as cl
+from chainlit.context import context as cl_context
 from dotenv import load_dotenv
 from langsmith import traceable
 
@@ -30,7 +31,7 @@ async def set_starters():
 @traceable
 @cl.on_chat_start
 def on_chat_start():
-    session = new_llm_session(cl.user_session.id)
+    session = new_llm_session(cl_context.session.id)
     cl.user_session.set("llm_session", session)
 
 
