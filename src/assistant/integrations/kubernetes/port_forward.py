@@ -33,21 +33,15 @@ class KubernetesServicePortForwarder:
         self._corev1_api = client.CoreV1Api(client.ApiClient())
 
     def _get_pod(self):
-        service = self._corev1_api.read_namespaced_service(
-            name=self._service_name, namespace=self._namespace
-        )
+        service = self._corev1_api.read_namespaced_service(name=self._service_name, namespace=self._namespace)
         selector = service.spec.selector
         if not selector:
-            _logger.error(
-                f"Service {self._service_name} has no selector. Cannot determine pods."
-            )
+            _logger.error(f"Service {self._service_name} has no selector. Cannot determine pods.")
             return
 
         label_selector = ",".join([f"{k}={v}" for k, v in selector.items()])
 
-        pod_list = self._corev1_api.list_namespaced_pod(
-            namespace=self._namespace, label_selector=label_selector
-        )
+        pod_list = self._corev1_api.list_namespaced_pod(namespace=self._namespace, label_selector=label_selector)
 
         if not pod_list.items:
             _logger.error(

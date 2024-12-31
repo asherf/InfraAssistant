@@ -52,9 +52,7 @@ def get_promql_alerts_rules_assistant_prompt():
         example_function_call=json.dumps(
             {
                 "name": "query",
-                "arguments": {
-                    "query": "rate(aws_applicationelb_httpcode_elb_4_xx_count_sum[5m])"
-                },
+                "arguments": {"query": "rate(aws_applicationelb_httpcode_elb_4_xx_count_sum[5m])"},
             }
         ),
     )
@@ -62,9 +60,7 @@ def get_promql_alerts_rules_assistant_prompt():
 
 def new_llm_session(session_id: str):
     _logger.info(f"Creating new LLM session for {session_id}")
-    return LLMSession(
-        session_id=session_id, system_prompt=get_promql_alerts_rules_assistant_prompt()
-    )
+    return LLMSession(session_id=session_id, system_prompt=get_promql_alerts_rules_assistant_prompt())
 
 
 class LLMSession:
@@ -74,21 +70,15 @@ class LLMSession:
         self._message_history = [{"role": "system", "content": system_prompt}]
         self.validate_api_readiness()
 
-    async def process_message(
-        self, *, incoming_message: str, response_msg: MessageBase
-    ):
-        await self.llm_stream_call(
-            response_msg=response_msg, role="user", message_content=incoming_message
-        )
+    async def process_message(self, *, incoming_message: str, response_msg: MessageBase):
+        await self.llm_stream_call(response_msg=response_msg, role="user", message_content=incoming_message)
         # response_msg.content = f"You said: {incoming_message}"
         remaining_calls = MAX_FUNCTION_CALLS_PER_MESSAGE
         while remaining_calls > 0:
             response_content = response_msg.content
             fc = extract_json_tag_content(response_content, "function_call")
             if not fc:
-                _logger.info(
-                    f"No function call found in the response: {response_content}"
-                )
+                _logger.info(f"No function call found in the response: {response_content}")
                 break
             api_response = self.call_api(fc)
             _logger.info(
@@ -127,9 +117,7 @@ class LLMSession:
                 await response_msg.stream_token(token)
         await response_msg.update()
         response_content = response_msg.content
-        _logger.debug(
-            f"LLM response: {response_msg.content[:30]}.... ({len(response_content)})"
-        )
+        _logger.debug(f"LLM response: {response_msg.content[:30]}.... ({len(response_content)})")
         self._message_history.append({"role": "assistant", "content": response_content})
         return response_content
 

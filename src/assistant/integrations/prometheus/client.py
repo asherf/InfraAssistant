@@ -19,9 +19,7 @@ class PrometheusClient:
         # https://prometheus.io/docs/prometheus/latest/querying/api/#rules
         alertname = alert["labels"]["alertname"]
 
-        response = self._client.get(
-            "/api/v1/rules", params={"type": "alert", "rule_name[]": alertname}
-        )
+        response = self._client.get("/api/v1/rules", params={"type": "alert", "rule_name[]": alertname})
         response.raise_for_status()
         groups = response.json()["data"]["groups"]
         if not groups:
@@ -41,13 +39,9 @@ class PrometheusClient:
         response.raise_for_status()
         return response.json()["data"]
 
-    def get_metric_label_values(
-        self, *, metric_name: str, label_name: str
-    ) -> list[str]:
+    def get_metric_label_values(self, *, metric_name: str, label_name: str) -> list[str]:
         # https://prometheus.io/docs/prometheus/latest/querying/api/#querying-label-values
-        response = self._client.get(
-            f"/api/v1/label/{label_name}/values", params={"match[]": metric_name}
-        )
+        response = self._client.get(f"/api/v1/label/{label_name}/values", params={"match[]": metric_name})
         response.raise_for_status()
         return response.json()["data"]
 

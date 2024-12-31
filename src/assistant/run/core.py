@@ -53,7 +53,5 @@ async def on_message(message: str):
     session = cl.user_session.get("llm_session")
     response_message = cl.Message(content="")
     user_msg = get_user_msg(message.content)
-    await session.process_message(
-        incoming_message=user_msg, response_msg=response_message
-    )
+    await session.process_message(incoming_message=user_msg, response_msg=response_message)
     await response_message.send()
