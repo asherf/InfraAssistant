@@ -56,3 +56,6 @@ class PrometheusClient:
         response = self._client.get(f"/api/v1/metadata", params={"metric": metric_name})
         response.raise_for_status()
         return response.json()["data"]
+
+    def __str__(self) -> str:
+        return f"Prometheus {self._client.base_url}"

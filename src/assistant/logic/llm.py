@@ -7,7 +7,11 @@ from chainlit.message import MessageBase
 
 from . import prompts
 from .helpers import extract_json_tag_content
-from .tools import call_prometheus_function, validate_function_def
+from .tools import (
+    call_prometheus_function,
+    validate_function_def,
+    validate_prometheus_readiness,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -68,6 +72,7 @@ class LLMSession:
         self._session_id = session_id
         self._system_prompt = system_prompt
         self._message_history = [{"role": "system", "content": system_prompt}]
+        self.validate_api_readiness()
 
     async def process_message(
         self, *, incoming_message: str, response_msg: MessageBase
@@ -123,6 +128,10 @@ class LLMSession:
         )
         self._message_history.append({"role": "assistant", "content": response_content})
         return response_content
+
+    def validate_api_readiness(self):
+        # TODO: based on the session type (promql/alerts), using the right tool call
+        validate_prometheus_readiness()
 
     def call_api(self, fc: dict):
         # TODO: based on the session type (promql/alerts), using the right tool call
