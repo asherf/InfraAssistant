@@ -66,6 +66,9 @@ def new_llm_session(session_id: str):
 class LLMSession:
     def __init__(self, *, session_id: str, system_prompt: str) -> None:
         self._session_id = session_id
+        mh_path = Path(".message_history")
+        mh_path.mkdir(parents=True, exist_ok=True)
+        self._message_history_store = mh_path / f"{session_id}.json"
         self._system_prompt = system_prompt
         self._message_history = [{"role": "system", "content": system_prompt}]
         self.validate_api_readiness()
@@ -100,7 +103,7 @@ class LLMSession:
         temperature=0.2,
     ) -> str:
         self._message_history.append({"role": role, "content": message_content})
-        _logger.debug(
+        _logger.info(
             f"LLM call: {role} - {message_content[:30]}... ({len(message_content)}) - history: {len(self._message_history)}"
         )
 
@@ -120,6 +123,7 @@ class LLMSession:
         response_content = response_msg.content
         _logger.debug(f"LLM response: {response_msg.content[:30]}.... ({len(response_content)})")
         self._message_history.append({"role": "assistant", "content": response_content})
+        self._save_message_history()
         return response_content
 
     def validate_api_readiness(self):
@@ -131,3 +135,6 @@ class LLMSession:
         # TODO: all of this needs to be async, probably.
         # TODO: hannle errors
         return call_prometheus_function(fc)
+
+    def _save_message_history(self) -> None:
+        self._message_history_store.write_text(json.dumps(self._message_history, indent=2))

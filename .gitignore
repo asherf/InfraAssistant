@@ -22,6 +22,7 @@ wheels/
 
 .env
 
+.message_history/
 # Virtual Environment
 venv/
 .venv/

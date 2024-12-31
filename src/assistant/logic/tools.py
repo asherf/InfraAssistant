@@ -20,7 +20,7 @@ def call_prometheus_function(function_call: dict):
     arguments = function_call["arguments"]
     client = get_prometheus_client()
     func = getattr(client, function_name)
-    _logger.info(f"Calling promethus'{function_name}' w/ {arguments}")
+    _logger.debug(f"Calling promethus'{function_name}' w/ {arguments}")
     response = func(**arguments)
     _logger.debug(f"Prometheus function {function_name} returned {response}")
     return f"<function_result>{json.dumps(response)}</function_result>"
