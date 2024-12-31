@@ -12,7 +12,7 @@ def get_icon_path(name: str) -> str:
     return f"/icons/{name}.svg"
 
 
-@cl.set_starters
+# @cl.set_starters
 async def set_starters():
     return [
         cl.Starter(
