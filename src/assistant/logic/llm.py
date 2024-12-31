@@ -68,8 +68,10 @@ class LLMSession:
         self._system_prompt = system_prompt
         self._message_history = [{"role": "system", "content": system_prompt}]
 
-    async def process_message(self, message: str):
-        return f"You said: {message}"
+    async def process_message(
+        self, *, incoming_message: str, response_msg: MessageBase
+    ):
+        response_msg.content = f"You said: {incoming_message}"
 
     async def llm_stream_call(
         self,
