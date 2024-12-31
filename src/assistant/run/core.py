@@ -38,5 +38,5 @@ def on_chat_start():
 @cl.on_message
 async def on_message(message: str):
     session = cl.user_session.get("llm_session")
-    response = session.process_message(message.content)
+    response = await session.process_message(message.content)
     await cl.Message(content=response).send()
