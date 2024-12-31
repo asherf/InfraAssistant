@@ -71,7 +71,12 @@ class LLMSession:
     async def process_message(
         self, *, incoming_message: str, response_msg: MessageBase
     ):
-        response_msg.content = f"You said: {incoming_message}"
+        # response_msg.content = f"You said: {incoming_message}"
+        await self.llm_stream_call(
+            rresponse_msg=response_msg,
+            role="user",
+            message_content=incoming_message,
+        )
 
     async def llm_stream_call(
         self,
