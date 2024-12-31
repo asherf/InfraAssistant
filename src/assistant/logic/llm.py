@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 import litellm
-from chainlit import MessageBase
+from chainlit.message import MessageBase
 
 from . import prompts
 from .tools import validate_function_def
