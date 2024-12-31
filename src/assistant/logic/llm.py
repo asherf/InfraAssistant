@@ -6,7 +6,8 @@ import litellm
 from chainlit.message import MessageBase
 
 from . import prompts
-from .tools import validate_function_def
+from .helpers import extract_json_tag_content
+from .tools import call_prometheus_function, validate_function_def
 
 _logger = logging.getLogger(__name__)
 
@@ -72,11 +73,24 @@ class LLMSession:
         self, *, incoming_message: str, response_msg: MessageBase
     ):
         # response_msg.content = f"You said: {incoming_message}"
-        await self.llm_stream_call(
-            rresponse_msg=response_msg,
-            role="user",
-            message_content=incoming_message,
-        )
+        remaining_calls = MAX_FUNCTION_CALLS_PER_MESSAGE
+        while remaining_calls > 0:
+            await self.llm_stream_call(
+                rresponse_msg=response_msg,
+                role="user",
+                message_content=incoming_message,
+            )
+            response_content = response_msg.content
+            fc = extract_json_tag_content(response_content, "function_call")
+            if not fc:
+                break
+            api_response = self.call_api(fc)
+            _logger.info(
+                f"API {fc} - {api_response[:50]}... ({len(api_response)}) - remaining calls: {remaining_calls}"
+            )
+            if not api_response:
+                break
+            remaining_calls -= 1
 
     async def llm_stream_call(
         self,
@@ -109,3 +123,8 @@ class LLMSession:
         )
         self._message_history.append({"role": "assistant", "content": response_content})
         return response_content
+
+    def call_api(self, fc: dict):
+        # TODO: based on the session type (promql/alerts), using the right tool call
+        # TODO: all of this needs to be async, probably.
+        return call_prometheus_function(fc)
