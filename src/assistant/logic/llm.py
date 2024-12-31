@@ -20,7 +20,7 @@ litellm.success_callback = ["langsmith"]
 # litellm.set_verbose=True
 
 
-MAX_FUNCTION_CALLS_PER_MESSAGE = 4
+MAX_FUNCTION_CALLS_PER_MESSAGE = 10
 # Choose one of these model configurations by uncommenting it:
 
 # OpenAI GPT-4
