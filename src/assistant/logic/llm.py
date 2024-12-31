@@ -81,7 +81,7 @@ class LLMSession:
         remaining_calls = MAX_FUNCTION_CALLS_PER_MESSAGE
         while remaining_calls > 0:
             await self.llm_stream_call(
-                rresponse_msg=response_msg,
+                response_msg=response_msg,
                 role="user",
                 message_content=incoming_message,
             )
@@ -99,7 +99,7 @@ class LLMSession:
 
     async def llm_stream_call(
         self,
-        rresponse_msg: MessageBase,
+        response_msg: MessageBase,
         role: str,
         message_content: str,
         temperature=0.2,
@@ -120,11 +120,11 @@ class LLMSession:
 
         for part in response:
             if token := part.choices[0].delta.content or "":
-                await rresponse_msg.stream_token(token)
-        await rresponse_msg.update()
-        response_content = rresponse_msg.content
+                await response_msg.stream_token(token)
+        await response_msg.update()
+        response_content = response_msg.content
         _logger.debug(
-            f"LLM response: {rresponse_msg.content[:30]}.... ({len(response_content)})"
+            f"LLM response: {response_msg.content[:30]}.... ({len(response_content)})"
         )
         self._message_history.append({"role": "assistant", "content": response_content})
         return response_content
