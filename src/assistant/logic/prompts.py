@@ -23,6 +23,13 @@ The process for creating an alerting rule is as follows:
     4. Formulate a PromQL query to query for metric values, use the query function to execute the query
     5. Formulate a PromQL query that captures the alert condition, use the query function to execute the query
     6. Create an alerting rule using the PromQL query
+    7. Run the query to determine if the alerting rule is firing, initially the alerting rule is not firing.
+    8. let the user know if the alerting rule is not firing and instruct the user affect the target so the metrics change in a way that is sufficient to fire the alerting rule.
+    9. wait for the user feedback and when the user confirms that the alert rule should be firing, evaluate the alerting rule again.
+    10. if the alerting rule is firing, the your job is done. If the alert rule is not firing proceed to the next step.
+    11. query metrics related to the alert rule and if needed, collect more data to better understand the metrics and the labels.
+    12. tweak the alerting rule and trying running it again to make sure it is firing.
+    13. repeat the process of tweaking the alerting rule until the alerting rule is firing.
 
 When making a function call:
    1. Output ONLY the thought process and ONE function call
