@@ -139,4 +139,5 @@ class LLMSession:
 
     def _save_message_history(self) -> None:
         # Don't store the system prompt in the message history
-        self._message_history_store.write_text(json.dumps(self._message_history[1:], indent=2))
+        msgs_to_save = self._message_history[1:]
+        self._message_history_store.write_text(json.dumps(msgs_to_save, indent=2))
