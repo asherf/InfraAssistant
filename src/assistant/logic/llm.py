@@ -73,15 +73,15 @@ class LLMSession:
         self.validate_api_readiness()
 
     async def process_message(self, *, incoming_message: str, response_msg: MessageBase):
-        llm_resoonse_content = await self.llm_stream_call(
+        llm_response_content = await self.llm_stream_call(
             response_msg=response_msg, role="user", message_content=incoming_message
         )
         # response_msg.content = f"You said: {incoming_message}"
         remaining_calls = MAX_FUNCTION_CALLS_PER_MESSAGE
         while remaining_calls > 0:
-            fc = extract_json_tag_content(llm_resoonse_content, "function_call")
+            fc = extract_json_tag_content(llm_response_content, "function_call")
             if not fc:
-                _logger.info(f"No function call found in the response: {llm_resoonse_content}")
+                _logger.info(f"No function call found in the response: {llm_response_content}")
                 break
             api_response = self.call_api(fc)
             _logger.info(
@@ -90,7 +90,7 @@ class LLMSession:
             if not api_response:
                 break
             remaining_calls -= 1
-            llm_resoonse_content = await self.llm_stream_call(
+            llm_response_content = await self.llm_stream_call(
                 response_msg=response_msg, role="user", message_content=api_response
             )
 
