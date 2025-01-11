@@ -5,7 +5,7 @@ from chainlit.context import context as cl_context
 from dotenv import load_dotenv
 from langsmith import traceable
 
-from assistant.logic.llm import new_llm_session
+from assistant.logic.llm import LLMSession, new_llm_session
 
 load_dotenv()
 
@@ -35,7 +35,7 @@ async def set_starters():
 @traceable
 @cl.on_chat_start
 def on_chat_start():
-    session = new_llm_session(cl_context.session.id)
+    session: LLMSession = new_llm_session(cl_context.session.id)
     cl.user_session.set("llm_session", session)
 
 
@@ -54,7 +54,7 @@ def get_user_msg(msg: str) -> str:
 
 @cl.on_message
 async def on_message(message: str):
-    llm_session = cl.user_session.get("llm_session")
+    llm_session: LLMSession = cl.user_session.get("llm_session")
     response_message = cl.Message(content="")
     user_msg = get_user_msg(message.content)
     _logger.info(f"Processing message: {user_msg}")

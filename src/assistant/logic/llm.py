@@ -132,7 +132,7 @@ class LLMSession:
     def call_api(self, fc: dict):
         # TODO: based on the session type (promql/alerts), using the right tool call
         # TODO: all of this needs to be async, probably.
-        # TODO: hannle errors
+        # TODO: handle errors
         return call_prometheus_function(fc)
 
     def _save_message_history(self) -> None:

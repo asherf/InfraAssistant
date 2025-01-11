@@ -1,3 +1,4 @@
+import uvicorn
 from chainlit.utils import mount_chainlit
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
@@ -23,3 +24,6 @@ def redirect_to_cl():
 
 app.mount("/icons", StaticFiles(directory="assets/public/icons"), name="icons")
 mount_chainlit(app=app, target=assistant_core.__file__, path=_CHAINLIT_PATH)
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="127.0.0.1", port=8080)
