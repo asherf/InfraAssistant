@@ -20,7 +20,7 @@ litellm.success_callback = ["langsmith"]
 # litellm.set_verbose=True
 
 
-MAX_FUNCTION_CALLS_PER_MESSAGE = 10
+MAX_FUNCTION_CALLS_PER_MESSAGE = 30
 # Choose one of these model configurations by uncommenting it:
 
 # OpenAI GPT-4
@@ -93,6 +93,8 @@ class LLMSession:
             llm_response_content = await self.llm_stream_call(
                 response_msg=response_msg, role="user", message_content=api_response
             )
+        if remaining_calls == 0:
+            raise Exception("Exceeded maximum function calls per message")
 
     async def llm_stream_call(
         self,
