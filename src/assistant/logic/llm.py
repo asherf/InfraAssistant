@@ -15,6 +15,7 @@ from .tools import (
 
 _logger = logging.getLogger(__name__)
 
+SYSTEM_ROLE = "system"
 USER_ROLE = "user"
 ASSISTANT_ROLE = "assistant"
 
@@ -78,7 +79,7 @@ class LLMSession:
         mh_path.mkdir(parents=True, exist_ok=True)
         self._message_history_store = mh_path / f"{session_id}.json"
         self._message_history = []
-        self._add_message(ASSISTANT_ROLE, system_prompt)
+        self._add_message(SYSTEM_ROLE, system_prompt)
         self.validate_api_readiness()
         self.validate_api_readiness()
 
