@@ -75,3 +75,4 @@ class TestStreamTagExtractor:
         stream_tag_extractor.handle_token("<tag></tag>")
         assert on_message_callback.messages == []
         assert on_tag_callback.tags == [("tag", "<tag></tag>")]
+

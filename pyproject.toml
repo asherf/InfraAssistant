@@ -20,7 +20,9 @@ dependencies = [
 dev = [
     "ipdb>=0.13.13",
     "ipython>=8.31.0",
+    "pygments>=2.18.0",
     "pytest>=8.3.4",
+    "pytest-icdiff>=0.9",
     "pytest-sugar>=1.0.0",
     "ruff>=0.8.4",
 ]

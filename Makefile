@@ -13,3 +13,6 @@ run:
 
 shell:
 	PYTHONPATH=src:$PYTHONPATH uv run ipython
+
+test:
+	PYTHONPATH=src:$PYTHONPATH uv run pytest --verbose
