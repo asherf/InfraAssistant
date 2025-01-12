@@ -77,7 +77,9 @@ class LLMSession:
         mh_path = Path(".message_history")
         mh_path.mkdir(parents=True, exist_ok=True)
         self._message_history_store = mh_path / f"{session_id}.json"
-        self._message_history = [{"role": "system", "content": system_prompt}]
+        self._message_history = []
+        self._add_message(ASSISTANT_ROLE, system_prompt)
+        self.validate_api_readiness()
         self.validate_api_readiness()
 
     async def process_message(self, *, incoming_message: str, response_msg: MessageBase):
@@ -111,7 +113,7 @@ class LLMSession:
         message_content: str,
         temperature=0.2,
     ) -> str:
-        self._message_history.append({"role": role, "content": message_content})
+        self._add_message(role=role, content=message_content)
         _logger.info(
             f"LLM call: {role} - {message_content[:30]}... ({len(message_content)}) - history: {len(self._message_history)}"
         )
@@ -131,8 +133,7 @@ class LLMSession:
         await response_msg.update()
         response_content = response_msg.content
         _logger.debug(f"LLM response: {response_msg.content[:30]}.... ({len(response_content)})")
-        self._message_history.append({"role": ASSISTANT_ROLE, "content": response_content})
-        self._save_message_history()
+        self._add_message(role=ASSISTANT_ROLE, content=response_content)
         return response_content
 
     def validate_api_readiness(self):
@@ -145,7 +146,9 @@ class LLMSession:
         # TODO: handle errors
         return call_prometheus_functions(fcs)
 
-    def _save_message_history(self) -> None:
+    def _add_message(self, role: str, content: str):
+        self._message_history.append({"role": role, "content": content})
         # Don't store the system prompt in the message history
         msgs_to_save = self._message_history[1:]
-        self._message_history_store.write_text(json.dumps(msgs_to_save, indent=2))
+        if msgs_to_save:
+            self._message_history_store.write_text(json.dumps(msgs_to_save, indent=2))
