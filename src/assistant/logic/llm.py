@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 import litellm
-from chainlit.message import MessageBase
+from typing import AsyncGenerator, Callable
 
 from . import prompts
 from .helpers import extract_json_tag_content
@@ -15,9 +15,13 @@ from .tools import (
 
 _logger = logging.getLogger(__name__)
 
-SYSTEM_ROLE = "system"
+
 USER_ROLE = "user"
 ASSISTANT_ROLE = "assistant"
+
+Stream = AsyncGenerator[str, None]
+StreamCallback = Callable[[Stream], None]
+
 
 litellm.success_callback = ["langsmith"]
 # litellm.set_verbose=True
@@ -81,11 +85,10 @@ class LLMSession:
         self._message_history = []
         self._add_message(SYSTEM_ROLE, system_prompt)
         self.validate_api_readiness()
-        self.validate_api_readiness()
 
-    async def process_message(self, *, incoming_message: str, response_msg: MessageBase):
+    async def process_message(self, *, incoming_message: str, on_message_start: StreamCallback) -> Stream:
         llm_response_content = await self.llm_stream_call(
-            response_msg=response_msg, role=USER_ROLE, message_content=incoming_message
+            on_message_start=on_message_start, role=USER_ROLE, message_content=incoming_message
         )
 
         remaining_calls = MAX_FUNCTION_CALLS_PER_MESSAGE
@@ -102,23 +105,24 @@ class LLMSession:
                 break
             remaining_calls -= 1
             llm_response_content = await self.llm_stream_call(
-                response_msg=response_msg, role=USER_ROLE, message_content=api_responses
+                on_message_start=on_message_start, role=USER_ROLE, message_content=api_response
+
             )
         if remaining_calls == 0:
             raise Exception("Exceeded maximum function calls per message")
 
     async def llm_stream_call(
         self,
-        response_msg: MessageBase,
         role: str,
         message_content: str,
         temperature=0.2,
-    ) -> str:
+        on_message_start: StreamCallback) -> Stream:
+
         self._add_message(role=role, content=message_content)
         _logger.info(
             f"LLM call: {role} - {message_content[:30]}... ({len(message_content)}) - history: {len(self._message_history)}"
         )
-        response_msg.content = ""
+        
         response = litellm.completion(
             model=CURRENT_MODEL,
             supports_system_message=SUPPORT_SYSTEM_MESSAGE,
@@ -127,13 +131,14 @@ class LLMSession:
             temperature=temperature,
             max_tokens=1000,
         )
-
-        for part in response:
-            if token := part.choices[0].delta.content or "":
-                await response_msg.stream_token(token)
-        await response_msg.update()
-        response_content = response_msg.content
-        _logger.debug(f"LLM response: {response_msg.content[:30]}.... ({len(response_content)})")
+        response_buffer:list[str] = []
+        async for chunk in response:
+            if token := chunk.choices[0].delta.content or "":
+                response_buffer.append(token)
+                yield token
+        
+        response_content = "".join(response_buffer)
+        _logger.debug(f"LLM response: {response_content[:100]}.... ({len(response_content)})")
         self._add_message(role=ASSISTANT_ROLE, content=response_content)
         return response_content
 

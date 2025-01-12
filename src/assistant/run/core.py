@@ -1,5 +1,5 @@
 import logging
-
+from typing import AsyncGenerator
 import chainlit as cl
 from chainlit.context import context as cl_context
 from dotenv import load_dotenv
@@ -51,6 +51,17 @@ def get_user_msg(msg: str) -> str:
         return DEFINE_AWS_ALB_ALERT_RULE_MACRO
     return msg
 
+async def on_message_start(stream: AsyncGenerator[str, None]):
+    message = cl.Message(content="")
+    await message.send()
+    
+    content = ""
+    async for token in stream:
+        content += token
+        await message.stream_token(token)
+    
+    await message.update()
+    return message
 
 @cl.on_message
 async def on_message(message: str):
