@@ -36,17 +36,20 @@ class StreamTagExtractor:
         self._tag_chunk_buffer.clear()
         self._tag_chunk_buffer.append("<")
 
+    def _maybe_send_message(self):
+        if not self._message_buffer:
+            return
+        self._on_message_callback("".join(self._message_buffer))
+        self._message_buffer.clear()
+
     def _start_tag(self):
         self._mode = StreamMode.COLLECTING_TAG
         self.reset_tags_tracker()
+        self._maybe_send_message()
 
     def _end_tag(self):
-        self._current_tag_name = "".join(self._current_tag_name)
+        self._current_tag_name = "".join(self._tag_chunk_buffer)[1:-1]
         self._mode = StreamMode.IN_TAG
-        # if tag_queue is not None:
-        # await tag_queue.put(None)
-        # tag_queue = await self._create_stream(current_tag_name, on_tag_start)
-        # await tag_queue.put(tag_chunk_buffer)
 
     def _in_tag_content(self, char):
         self._tag_chunk_buffer.append(char)
@@ -71,6 +74,4 @@ class StreamTagExtractor:
                     self._end_tag()
             elif self._mode == StreamMode.IN_TAG:
                 self._in_tag_content(char)
-            if self._message_buffer and self._mode == StreamMode.NORMAL:
-                self._on_message_callback("".join(self._message_buffer))
-                self._message_buffer.clear()
+        self._maybe_send_message()

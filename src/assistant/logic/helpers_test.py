@@ -1,6 +1,6 @@
 import pytest
 
-from src.assistant.logic.helpers import StreamTagExtractor
+from assistant.logic.helpers import StreamTagExtractor
 
 
 @pytest.fixture
