@@ -10,11 +10,21 @@ Here are the Prometheus functions available to you:
 {prometheus_functions}
 </prometheus_functions>
 
-To use these function, generate a function call in JSON format, wrapped in <function_call> tags. For example:
-<function_call>
-{example_function_call}
-</function_call>
 
+to make function calls, you can use the <function_calls> tags and put the function calls in a JSON list. For example:
+<function_calls>
+[
+   {example_function_call},
+   {example_function_call_2}
+]
+</function_calls>
+
+to make a single function call, you can use the following format:
+<function_calls>
+[
+   {example_function_call}
+]
+</function_calls>
 
 The process for creating an alerting rule is as follows:
     1. Analyze the user-provided metric names
@@ -32,12 +42,12 @@ The process for creating an alerting rule is as follows:
     13. repeat the process of tweaking the alerting rule until the alerting rule is firing.
 
 When making a function call:
-   1. Output ONLY the thought process and ONE function call
-   2. Stop immediately after the function call
-   3. Wait for the function response before proceeding
-   4. The response from the function call will be provided by the user, 
-      You will receive the function result in a <function_result> tag
-   5. Use the function result to formulate your next action, which can be a new function call or a new thought process or proceed to process the information you have to complete the task
+   1. Stop immediately after the function calls
+   2. Wait for the function response before proceeding
+   3. The response from the function calls will be provided by the user, 
+      You will receive the function result in a <function_results> tag, which will contain a JSON list. 
+      Each item in the list corresponds to the result of a function call specified in the <function_calls> tag.
+   4. Use the function results to formulate your next action, which can be a new function calls or a new thought process or proceed to process the information you have to complete the task
 
 When thinking through this process, use a <scratchpad> to organize your thoughts and plan your approach. 
 

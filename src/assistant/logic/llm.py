@@ -8,13 +8,15 @@ from chainlit.message import MessageBase
 from . import prompts
 from .helpers import extract_json_tag_content
 from .tools import (
-    call_prometheus_function,
+    call_prometheus_functions,
     validate_function_def,
     validate_prometheus_readiness,
 )
 
 _logger = logging.getLogger(__name__)
 
+USER_ROLE = "user"
+ASSISTANT_ROLE = "assistant"
 
 litellm.success_callback = ["langsmith"]
 # litellm.set_verbose=True
@@ -51,6 +53,12 @@ def get_promql_alerts_rules_assistant_prompt():
         prometheus_functions=function_defs,
         example_function_call=json.dumps(
             {
+                "name": "get_metric_labels",
+                "arguments": {"metric_name": "aws_applicationelb_httpcode_elb_4_xx_count_sum"},
+            }
+        ),
+        example_function_call_2=json.dumps(
+            {
                 "name": "query",
                 "arguments": {"query": "rate(aws_applicationelb_httpcode_elb_4_xx_count_sum[5m])"},
             }
@@ -74,24 +82,24 @@ class LLMSession:
 
     async def process_message(self, *, incoming_message: str, response_msg: MessageBase):
         llm_response_content = await self.llm_stream_call(
-            response_msg=response_msg, role="user", message_content=incoming_message
+            response_msg=response_msg, role=USER_ROLE, message_content=incoming_message
         )
-        # response_msg.content = f"You said: {incoming_message}"
+
         remaining_calls = MAX_FUNCTION_CALLS_PER_MESSAGE
         while remaining_calls > 0:
-            fc = extract_json_tag_content(llm_response_content, "function_call")
-            if not fc:
-                _logger.info(f"No function call found in the response: {llm_response_content}")
+            fcs = extract_json_tag_content(llm_response_content, "function_calls")
+            if not fcs:
+                _logger.info(f"No function calls found in the response: {llm_response_content}")
                 break
-            api_response = self.call_api(fc)
+            api_responses = self.call_apis(fcs)
             _logger.info(
-                f"API {fc} - {api_response[:50]}... ({len(api_response)}) - remaining calls: {remaining_calls}"
+                f"API {fcs} - {api_responses[:50]}... ({len(api_responses)}) - remaining calls: {remaining_calls}"
             )
-            if not api_response:
+            if not api_responses:
                 break
             remaining_calls -= 1
             llm_response_content = await self.llm_stream_call(
-                response_msg=response_msg, role="user", message_content=api_response
+                response_msg=response_msg, role=USER_ROLE, message_content=api_responses
             )
         if remaining_calls == 0:
             raise Exception("Exceeded maximum function calls per message")
@@ -123,7 +131,7 @@ class LLMSession:
         await response_msg.update()
         response_content = response_msg.content
         _logger.debug(f"LLM response: {response_msg.content[:30]}.... ({len(response_content)})")
-        self._message_history.append({"role": "assistant", "content": response_content})
+        self._message_history.append({"role": ASSISTANT_ROLE, "content": response_content})
         self._save_message_history()
         return response_content
 
@@ -131,11 +139,11 @@ class LLMSession:
         # TODO: based on the session type (promql/alerts), using the right tool call
         validate_prometheus_readiness()
 
-    def call_api(self, fc: dict):
+    def call_apis(self, fcs: list[dict]) -> str:
         # TODO: based on the session type (promql/alerts), using the right tool call
         # TODO: all of this needs to be async, probably.
         # TODO: handle errors
-        return call_prometheus_function(fc)
+        return call_prometheus_functions(fcs)
 
     def _save_message_history(self) -> None:
         # Don't store the system prompt in the message history

@@ -15,15 +15,23 @@ def validate_function_def(function_name: str):
     getattr(client, function_name)
 
 
-def call_prometheus_function(function_call: dict):
+def call_prometheus_functions(function_calls: list[dict]) -> str:
+    responses = []
+    for function_call in function_calls:
+        response = _call_prometheus_function(function_call)
+        responses.append(response)
+    return f"<function_results>{json.dumps(responses)}</function_results>"
+
+
+def _call_prometheus_function(function_call: dict) -> dict | list:
     function_name = function_call["name"]
     arguments = function_call["arguments"]
     client = get_prometheus_client()
     func = getattr(client, function_name)
-    _logger.debug(f"Calling promethus'{function_name}' w/ {arguments}")
+    _logger.debug(f"Calling prometheus'{function_name}' w/ {arguments}")
     response = func(**arguments)
     _logger.debug(f"Prometheus function {function_name} returned {response}")
-    return f"<function_result>{json.dumps(response)}</function_result>"
+    return response
 
 
 def validate_prometheus_readiness():
