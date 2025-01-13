@@ -73,6 +73,16 @@ class StreamTagExtractor:
         self._mode = StreamMode.NORMAL
         self._on_tag_callback(self._current_tag_name, tag_chunk)
 
+    def _get_stream_handler(self, queue):
+        async def stream_handler() -> AsyncGenerator[str, None]:
+            while True:
+                chunk = await queue.get()
+                if chunk is None:  # None signals end of stream
+                    break
+                yield chunk
+
+        return stream_handler
+
     def _add_task(self, coro):
         task = asyncio.create_task(coro)
         self._active_tasks.add(task)
@@ -80,15 +90,8 @@ class StreamTagExtractor:
 
     async def _create_message_stream(self, on_stream_start: Callable[..., None]) -> asyncio.Queue:
         queue = asyncio.Queue()
-
-        async def stream() -> AsyncGenerator[str, None]:
-            while True:
-                chunk = await queue.get()
-                if chunk is None:  # None signals end of stream
-                    break
-                yield chunk
-
-        self._add_task(on_stream_start(stream()))
+        sh = self._get_stream_handler(queue)
+        self._add_task(on_stream_start(sh()))
         return queue
 
     async def handle_token(self, token: str) -> None:
