@@ -23,7 +23,7 @@ class StreamMode(Enum):
 
 
 class StreamTagExtractor:
-    def __init__(self, on_message_callback, on_tag_callback):
+    def __init__(self, on_message_callback: Callable[..., None], on_tag_callback):
         self._mode = StreamMode.NORMAL
         self._tag_name_buffer = []
         self._current_tag_name = None
@@ -47,7 +47,7 @@ class StreamTagExtractor:
                 self._message_queue = None
             return
         if not self._message_queue:
-            self._message_queue = await self._create_message_stream(self._on_message_callback)
+            self._message_queue = await self._create_message_stream()
         mb = "".join(self._message_buffer)
         self._message_buffer.clear()
         await self._message_queue.put(mb)
@@ -88,10 +88,10 @@ class StreamTagExtractor:
         self._active_tasks.add(task)
         task.add_done_callback(self._active_tasks.discard)
 
-    async def _create_message_stream(self, on_stream_start: Callable[..., None]) -> asyncio.Queue:
+    async def _create_message_stream(self) -> asyncio.Queue:
         queue = asyncio.Queue()
         sh = self._get_stream_handler(queue)
-        self._add_task(on_stream_start(sh()))
+        self._add_task(self._on_message_callback(sh()))
         return queue
 
     async def handle_token(self, token: str) -> None:
