@@ -81,7 +81,6 @@ class LLMSession:
         self._message_history = []
         self._add_message(SYSTEM_ROLE, system_prompt)
         self.validate_api_readiness()
-        self.validate_api_readiness()
 
     async def process_message(self, *, incoming_message: str, response_msg: MessageBase):
         llm_response_content = await self.llm_stream_call(
