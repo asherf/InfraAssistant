@@ -83,7 +83,7 @@ class LLMSession:
         self.validate_api_readiness()
 
     async def process_message(self, *, incoming_message: str, response_msg: MessageBase):
-        llm_response_content = await self.llm_stream_call(
+        llm_response_content = await self._llm_stream_call(
             response_msg=response_msg, role=USER_ROLE, message_content=incoming_message
         )
 
@@ -100,13 +100,13 @@ class LLMSession:
             if not api_responses:
                 break
             remaining_calls -= 1
-            llm_response_content = await self.llm_stream_call(
+            llm_response_content = await self._llm_stream_call(
                 response_msg=response_msg, role=USER_ROLE, message_content=api_responses
             )
         if remaining_calls == 0:
             raise Exception("Exceeded maximum function calls per message")
 
-    async def llm_stream_call(
+    async def _llm_stream_call(
         self,
         response_msg: MessageBase,
         role: str,
