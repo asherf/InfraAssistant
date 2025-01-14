@@ -16,8 +16,12 @@ def extract_json_tag_content(text: str, tag_name: str) -> dict | list | None:
     return json.loads(content) if content else None
 
 
+# this is too generic, need to make it more specific at some point
+Callback = Callable[..., None]
+
+
 class StreamHandler:
-    def __init__(self, on_message_callback: Callable[..., None], on_tag_start_callback: Callable[..., None]):
+    def __init__(self, on_message_callback: Callback, on_tag_start_callback: Callback):
         self._on_message_callback = on_message_callback
         self._message_queue = None
         self._on_tag_start_callback = on_tag_start_callback
@@ -91,7 +95,7 @@ class StreamMode(Enum):
 
 class StreamTagExtractor:
     def __init__(
-        self, *, on_message_callback: Callable[..., None], on_tag_callback, on_tag_start_callback: Callable[..., None]
+        self, *, on_message_callback, on_tag_start_callback: Callback, on_tag_callback: Callback | None = None
     ):
         self._mode = StreamMode.NORMAL
         self._current_tag_name = None
@@ -129,7 +133,8 @@ class StreamTagExtractor:
             return
         self._mode = StreamMode.NORMAL
         await self._stream_helper.end_tag_stream()
-        self._on_tag_callback(self._current_tag_name, tag_chunk)
+        if self._on_tag_callback is not None:
+            self._on_tag_callback(self._current_tag_name, tag_chunk)
 
     async def handle_token(self, token: str) -> None:
         for char in token:
