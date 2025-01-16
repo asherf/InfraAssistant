@@ -5,7 +5,7 @@ from chainlit.context import context as cl_context
 from dotenv import load_dotenv
 from langsmith import traceable
 
-from assistant.logic.llm import LLMSession, new_llm_session
+from assistant.logic.llm import LLMSession, Stream, new_llm_session
 
 load_dotenv()
 
@@ -32,13 +32,6 @@ async def set_starters():
     ]
 
 
-@traceable
-@cl.on_chat_start
-def on_chat_start():
-    session: LLMSession = new_llm_session(cl_context.session.id)
-    cl.user_session.set("llm_session", session)
-
-
 DEFINE_AWS_ALB_ALERT_RULE_MACRO = """
 using the following metrics: aws_applicationelb_httpcode_target_4_xx_count_sum and aws_applicationelb_request_count_sum 
 define an alerting rule for the following that will fire when the rate of 4xx errors is greater than 10% of the total requests.
@@ -52,11 +45,39 @@ def get_user_msg(msg: str) -> str:
     return msg
 
 
+async def on_message_start(stream: Stream):
+    message = cl.Message(content="")
+    await message.send()
+    async for token in stream:
+        await message.stream_token(token)
+    await message.update()
+    return message
+
+
+async def on_tag_start(tag_name: str, stream: Stream):
+    message = cl.Message(content="")
+    await message.send()
+    step = cl.Step(name=tag_name, parent_id=message.id)
+    await step.send()
+    async for token in stream:
+        await step.stream_token(token)
+
+    await step.update()
+    return step
+
+
+@traceable
+@cl.on_chat_start
+def on_chat_start():
+    session: LLMSession = new_llm_session(
+        session_id=cl_context.session.id, on_message_start_cb=on_message_start, on_tag_start_cb=on_tag_start
+    )
+    cl.user_session.set("llm_session", session)
+
+
 @cl.on_message
 async def on_message(message: str):
     llm_session: LLMSession = cl.user_session.get("llm_session")
-    response_message = cl.Message(content="")
     user_msg = get_user_msg(message.content)
     _logger.info(f"Processing message: {user_msg}")
-    await llm_session.process_message(incoming_message=user_msg, response_msg=response_message)
-    await response_message.send()
+    await llm_session.process_message(incoming_message=user_msg)

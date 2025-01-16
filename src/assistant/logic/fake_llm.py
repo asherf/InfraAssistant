@@ -21,7 +21,9 @@ def new_fake_llm_session(session_id: str, on_message_start_cb, on_tag_start_cb: 
 class FakeLLMSession:
     def __init__(self, *, session_id: str, on_message_start_cb, on_tag_start_cb: StreamCallback) -> None:
         self._session_id = session_id
-        self._stream_extractor = StreamTagExtractor(on_message_callback=on_message_start_cb, on_tag_start_callback=on_tag_start_cb)
+        self._stream_extractor = StreamTagExtractor(
+            on_message_callback=on_message_start_cb, on_tag_start_callback=on_tag_start_cb
+        )
 
     async def process_message(self, *, incoming_message: str) -> None:
         fake_response = f"""
