@@ -1,12 +1,12 @@
 import json
 import logging
 from pathlib import Path
+from typing import AsyncGenerator, Callable
 
 import litellm
-from chainlit.message import MessageBase
 
 from . import prompts
-from .helpers import extract_json_tag_content
+from .helpers import StreamTagExtractor, extract_json_tag_content
 from .tools import (
     call_prometheus_functions,
     validate_function_def,
@@ -19,10 +19,14 @@ SYSTEM_ROLE = "system"
 USER_ROLE = "user"
 ASSISTANT_ROLE = "assistant"
 
+Stream = AsyncGenerator[str, None]
+StreamCallback = Callable[[Stream], None]
+
 litellm.success_callback = ["langsmith"]
 # litellm.set_verbose=True
 
 
+DEFAULT_TEMPERATURE = 0.2
 MAX_FUNCTION_CALLS_PER_MESSAGE = 30
 # Choose one of these model configurations by uncommenting it:
 
@@ -38,6 +42,8 @@ FIREWORKS_MODEL = "fireworks_ai/accounts/fireworks/models/qwen2p5-coder-32b-inst
 CURRENT_MODEL = CLAUDE_MODEL  # Change this to the model you want to use
 # see: https://docs.anthropic.com/en/api/messages#body-messages
 SUPPORT_SYSTEM_MESSAGE = CURRENT_MODEL != CLAUDE_MODEL
+
+Stream = AsyncGenerator[str, None]
 
 
 def _get_function_defs(name: str):
@@ -67,26 +73,51 @@ def get_promql_alerts_rules_assistant_prompt():
     )
 
 
-def new_llm_session(session_id: str):
+def new_llm_session(*, session_id: str, on_message_start_cb, on_tag_start_cb: StreamCallback):
     _logger.info(f"Creating new LLM session for {session_id}")
-    return LLMSession(session_id=session_id, system_prompt=get_promql_alerts_rules_assistant_prompt())
+    return LLMSession(
+        session_id=session_id,
+        system_prompt=get_promql_alerts_rules_assistant_prompt(),
+        on_message_start_cb=on_message_start_cb,
+        on_tag_start_cb=on_tag_start_cb,
+    )
 
 
 class LLMSession:
-    def __init__(self, *, session_id: str, system_prompt: str) -> None:
+    def __init__(
+        self, *, session_id: str, system_prompt: str, on_message_start_cb, on_tag_start_cb: StreamCallback
+    ) -> None:
         self._session_id = session_id
         mh_path = Path(".message_history")
         mh_path.mkdir(parents=True, exist_ok=True)
         self._message_history_store = mh_path / f"{session_id}.json"
         self._message_history = []
+        self._stream_extractor = StreamTagExtractor(
+            on_message_callback=on_message_start_cb, on_tag_start_callback=on_tag_start_cb
+        )
         self._add_message(SYSTEM_ROLE, system_prompt)
         self.validate_api_readiness()
 
-    async def process_message(self, *, incoming_message: str, response_msg: MessageBase):
-        llm_response_content = await self._llm_stream_call(
-            response_msg=response_msg, role=USER_ROLE, message_content=incoming_message
-        )
+    async def process_message(self, *, incoming_message: str) -> None:
+        llm_response_content_buffer = []
+        # def _handle_tag(tag_name: str, tag_content: str):
+        #     if tag_name != "function_calls":
+        #         return
+        #     fcs = extract_json_tag_content(tag_content, tag_name)
+        #     if not fcs:
+        #         _logger.info(f"No function calls found in the response: {tag_content}")
+        #         return
+        #     api_responses = self.call_apis(fcs)
+        #     _logger.info(f"API {fcs} - {api_responses[:50]}... ({len(api_responses)})")
+        #     if not api_responses:
+        #         return
+        #     self._add_message(USER_ROLE, api_responses)
 
+        async for token in self._llm_stream_call(role=USER_ROLE, message_content=incoming_message):
+            self._stream_extractor.handle_token(token)
+            llm_response_content_buffer.append(token)
+
+        llm_response_content = "".join(llm_response_content_buffer)
         remaining_calls = MAX_FUNCTION_CALLS_PER_MESSAGE
         while remaining_calls > 0:
             fcs = extract_json_tag_content(llm_response_content, "function_calls")
@@ -100,41 +131,36 @@ class LLMSession:
             if not api_responses:
                 break
             remaining_calls -= 1
-            llm_response_content = await self._llm_stream_call(
-                response_msg=response_msg, role=USER_ROLE, message_content=api_responses
-            )
+            llm_response_content_buffer.clear()
+            async for token in self._llm_stream_call(role=USER_ROLE, message_content=incoming_message):
+                self._stream_extractor.handle_token(token)
+                llm_response_content_buffer.append(token)
+            llm_response_content = "".join(llm_response_content_buffer)
         if remaining_calls == 0:
             raise Exception("Exceeded maximum function calls per message")
 
-    async def _llm_stream_call(
-        self,
-        response_msg: MessageBase,
-        role: str,
-        message_content: str,
-        temperature=0.2,
-    ) -> str:
+    async def _llm_stream_call(self, role: str, message_content: str, temperature=0.2) -> Stream:
         self._add_message(role=role, content=message_content)
         _logger.info(
             f"LLM call: {role} - {message_content[:30]}... ({len(message_content)}) - history: {len(self._message_history)}"
         )
-        response_msg.content = ""
         response = litellm.completion(
             model=CURRENT_MODEL,
             supports_system_message=SUPPORT_SYSTEM_MESSAGE,
             messages=self._message_history,
             stream=True,
-            temperature=temperature,
+            temperature=DEFAULT_TEMPERATURE,
             max_tokens=1000,
         )
+        response_buffer: list[str] = []
+        async for chunk in response:
+            if token := chunk.choices[0].delta.content or "":
+                response_buffer.append(token)
+                yield token
 
-        for part in response:
-            if token := part.choices[0].delta.content or "":
-                await response_msg.stream_token(token)
-        await response_msg.update()
-        response_content = response_msg.content
-        _logger.debug(f"LLM response: {response_msg.content[:30]}.... ({len(response_content)})")
+        response_content = "".join(response_buffer)
+        _logger.debug(f"LLM response: {response_content[:100]}.... ({len(response_content)})")
         self._add_message(role=ASSISTANT_ROLE, content=response_content)
-        return response_content
 
     def validate_api_readiness(self):
         # TODO: based on the session type (promql/alerts), using the right tool call
