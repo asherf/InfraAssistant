@@ -126,6 +126,7 @@ class LLMSession:
             _logger.info("No recent messages to resume from")
             return
         _logger.info(f"Resuming from recent messages ({len(self._message_history)} messages)")
+        await self._process_messages(incoming_message=None)
 
     async def process_message(self, *, incoming_message: str) -> None:
         await self._process_messages(incoming_message=incoming_message)

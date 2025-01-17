@@ -75,7 +75,7 @@ async def on_chat_start() -> None:
     use_recent = False
     session: LLMSession = new_llm_session(
         session_id=cl_context.session.id,
-        start_from_recent=False,
+        start_from_recent=use_recent,
         on_message_start_cb=on_message_start,
         on_tag_start_cb=on_tag_start,
     )
