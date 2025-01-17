@@ -144,7 +144,7 @@ class LLMSession:
         _logger.info(
             f"LLM call: {role} - {message_content[:30]}... ({len(message_content)}) - history: {len(self._message_history)}"
         )
-        response = litellm.completion(
+        response = await litellm.acompletion(
             model=CURRENT_MODEL,
             supports_system_message=SUPPORT_SYSTEM_MESSAGE,
             messages=self._message_history,
