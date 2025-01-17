@@ -54,7 +54,7 @@ async def on_message_start(stream: Stream):
     msg_Content = "".join(msg_buffer).strip()
     if not msg_Content:
         return
-    _logger.info(f"Message to user: {''.join(msg_buffer)}")
+    _logger.info(f"Message: {''.join(msg_buffer)}")
     await message.update()
 
 
@@ -65,7 +65,7 @@ async def on_tag_start(tag_name: str, stream: Stream):
     async for token in stream:
         tag_buffer.append(token)
         await step.stream_token(token)
-    _logger.info(f"Tag {tag_name} content: {''.join(tag_buffer)}")
+    _logger.info(f"Tag: {''.join(tag_buffer)}")
     await step.update()
 
 

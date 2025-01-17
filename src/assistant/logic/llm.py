@@ -127,7 +127,7 @@ class LLMSession:
             raise Exception("Exceeded maximum function calls per message")
 
     async def _llm_stream_call(self, message_content: str) -> Stream:
-        _logger.info(f"LLM call: {message_content})")
+        _logger.info(f"LLM call: {message_content[:400]}")
         self._add_message(role=USER_ROLE, content=message_content)
         response = await litellm.acompletion(
             model=CURRENT_MODEL,
