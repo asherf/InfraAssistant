@@ -1,7 +1,8 @@
 import json
 import logging
+from collections.abc import AsyncGenerator
 from pathlib import Path
-from typing import AsyncGenerator, Callable
+from typing import Callable
 
 import litellm
 
@@ -62,13 +63,13 @@ def get_promql_alerts_rules_assistant_prompt():
             {
                 "name": "get_metric_labels",
                 "arguments": {"metric_name": "aws_applicationelb_httpcode_elb_4_xx_count_sum"},
-            }
+            },
         ),
         example_function_call_2=json.dumps(
             {
                 "name": "query",
                 "arguments": {"query": "rate(aws_applicationelb_httpcode_elb_4_xx_count_sum[5m])"},
-            }
+            },
         ),
     )
 
@@ -85,7 +86,12 @@ def new_llm_session(*, session_id: str, on_message_start_cb, on_tag_start_cb: St
 
 class LLMSession:
     def __init__(
-        self, *, session_id: str, system_prompt: str, on_message_start_cb, on_tag_start_cb: StreamCallback
+        self,
+        *,
+        session_id: str,
+        system_prompt: str,
+        on_message_start_cb,
+        on_tag_start_cb: StreamCallback,
     ) -> None:
         self._session_id = session_id
         mh_path = Path(".message_history")
@@ -93,7 +99,8 @@ class LLMSession:
         self._message_history_store = mh_path / f"{session_id}.json"
         self._message_history = []
         self._stream_extractor = StreamTagExtractor(
-            on_message_callback=on_message_start_cb, on_tag_start_callback=on_tag_start_cb
+            on_message_callback=on_message_start_cb,
+            on_tag_start_callback=on_tag_start_cb,
         )
         self._add_message(SYSTEM_ROLE, system_prompt)
         self.validate_api_readiness()
@@ -114,7 +121,7 @@ class LLMSession:
         #     self._add_message(USER_ROLE, api_responses)
 
         async for token in self._llm_stream_call(role=USER_ROLE, message_content=incoming_message):
-            self._stream_extractor.handle_token(token)
+            await self._stream_extractor.handle_token(token)
             llm_response_content_buffer.append(token)
 
         llm_response_content = "".join(llm_response_content_buffer)
@@ -126,7 +133,7 @@ class LLMSession:
                 break
             api_responses = self.call_apis(fcs)
             _logger.info(
-                f"API {fcs} - {api_responses[:50]}... ({len(api_responses)}) - remaining calls: {remaining_calls}"
+                f"API {fcs} - {api_responses[:50]}... ({len(api_responses)}) - remaining calls: {remaining_calls}",
             )
             if not api_responses:
                 break
@@ -142,7 +149,7 @@ class LLMSession:
     async def _llm_stream_call(self, role: str, message_content: str, temperature=0.2) -> Stream:
         self._add_message(role=role, content=message_content)
         _logger.info(
-            f"LLM call: {role} - {message_content[:30]}... ({len(message_content)}) - history: {len(self._message_history)}"
+            f"LLM call: {role} - {message_content[:30]}... ({len(message_content)}) - history: {len(self._message_history)}",
         )
         response = await litellm.acompletion(
             model=CURRENT_MODEL,
@@ -162,7 +169,7 @@ class LLMSession:
         _logger.debug(f"LLM response: {response_content[:100]}.... ({len(response_content)})")
         self._add_message(role=ASSISTANT_ROLE, content=response_content)
 
-    def validate_api_readiness(self):
+    def validate_api_readiness(self) -> None:
         # TODO: based on the session type (promql/alerts), using the right tool call
         validate_prometheus_readiness()
 

@@ -37,7 +37,7 @@ class KubernetesServicePortForwarder:
         selector = service.spec.selector
         if not selector:
             _logger.error(f"Service {self._service_name} has no selector. Cannot determine pods.")
-            return
+            return None
 
         label_selector = ",".join([f"{k}={v}" for k, v in selector.items()])
 
@@ -45,9 +45,9 @@ class KubernetesServicePortForwarder:
 
         if not pod_list.items:
             _logger.error(
-                f"No pods found for service {self._service_name} in namespace {self._namespace} with selector {selector}"
+                f"No pods found for service {self._service_name} in namespace {self._namespace} with selector {selector}",
             )
-            return
+            return None
 
         return pod_list.items[0]
 
@@ -58,9 +58,6 @@ class KubernetesServicePortForwarder:
 
         pod_name = pod.metadata.name
         _logger.info(f"Forwarding port to pod: {pod_name}")
-        import pdb
-
-        pdb.set_trace()
         resp = portforward(
             self._corev1_api.connect_get_namespaced_pod_portforward,
             name=pod_name,
@@ -79,7 +76,7 @@ class KubernetesServicePortForwarder:
 
     # ... (start, stop, get_local_port methods remain the same)
 
-    def start(self):
+    def start(self) -> None:
         if self._thread is not None and self._thread.is_alive():
             _logger.warning("Port-forwarding is already running.")
             return
@@ -88,7 +85,7 @@ class KubernetesServicePortForwarder:
         self._thread.daemon = True
         self._thread.start()
 
-    def stop(self):
+    def stop(self) -> None:
         if self._process and self._process.is_open():
             self._process.close()
             self._process = None
