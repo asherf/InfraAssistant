@@ -33,9 +33,8 @@ async def set_starters():
 
 
 DEFINE_AWS_ALB_ALERT_RULE_MACRO = """
-using the following metrics: aws_applicationelb_httpcode_target_4_xx_count_sum and aws_applicationelb_request_count_sum 
 define an alerting rule for the following that will fire when the rate of 4xx errors is greater than 10% of the total requests.
-"""
+Use the prometheus metrics named 'aws_applicationelb_httpcode_target_4_xx_count_sum' and 'aws_applicationelb_request_count_sum'""".strip()
 
 
 def get_user_msg(msg: str) -> str:

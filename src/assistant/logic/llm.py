@@ -1,6 +1,7 @@
 import json
 import logging
 from collections.abc import AsyncGenerator
+from copy import deepcopy
 from pathlib import Path
 from typing import Callable
 
@@ -107,7 +108,7 @@ class LLMSession:
 
     async def process_message(self, *, incoming_message: str) -> None:
         llm_response_content_buffer = []
-        async for token in self._llm_stream_call(role=USER_ROLE, message_content=incoming_message):
+        async for token in self._llm_stream_call(message_content=incoming_message):
             await self._stream_extractor.handle_token(token)
             llm_response_content_buffer.append(token)
 
@@ -126,22 +127,20 @@ class LLMSession:
                 break
             remaining_calls -= 1
             llm_response_content_buffer.clear()
-            async for token in self._llm_stream_call(role=USER_ROLE, message_content=api_responses):
+            async for token in self._llm_stream_call(message_content=api_responses):
                 await self._stream_extractor.handle_token(token)
                 llm_response_content_buffer.append(token)
             llm_response_content = "".join(llm_response_content_buffer)
         if remaining_calls == 0:
             raise Exception("Exceeded maximum function calls per message")
 
-    async def _llm_stream_call(self, role: str, message_content: str, temperature=0.2) -> Stream:
-        self._add_message(role=role, content=message_content)
-        _logger.info(
-            f"LLM call: {role} - {message_content[:30]}... ({len(message_content)}) - history: {len(self._message_history)}",
-        )
+    async def _llm_stream_call(self, message_content: str) -> Stream:
+        _logger.info(f"LLM call: {message_content})")
+        self._add_message(role=USER_ROLE, content=message_content)
         response = await litellm.acompletion(
             model=CURRENT_MODEL,
             supports_system_message=SUPPORT_SYSTEM_MESSAGE,
-            messages=self._message_history,
+            messages=deepcopy(self._message_history),  # litellm will modify this list, so we need to pass a copy
             stream=True,
             temperature=DEFAULT_TEMPERATURE,
             max_tokens=1000,
@@ -153,7 +152,7 @@ class LLMSession:
                 yield token
 
         response_content = "".join(response_buffer)
-        _logger.debug(f"LLM response: {response_content[:100]}.... ({len(response_content)})")
+        _logger.debug(f"LLM response: {response_content}")
         self._add_message(role=ASSISTANT_ROLE, content=response_content)
 
     def validate_api_readiness(self) -> None:
