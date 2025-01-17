@@ -74,6 +74,7 @@ async def on_tag_start(tag_name: str, stream: Stream):
 async def on_chat_start() -> None:
     session: LLMSession = new_llm_session(
         session_id=cl_context.session.id,
+        start_from_recent=False,
         on_message_start_cb=on_message_start,
         on_tag_start_cb=on_tag_start,
     )
