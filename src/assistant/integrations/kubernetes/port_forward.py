@@ -79,7 +79,7 @@ class KubernetesServicePortForwarder:
 
     # ... (start, stop, get_local_port methods remain the same)
 
-    def start(self):
+    def start(self) -> None:
         if self._thread is not None and self._thread.is_alive():
             _logger.warning("Port-forwarding is already running.")
             return
@@ -88,7 +88,7 @@ class KubernetesServicePortForwarder:
         self._thread.daemon = True
         self._thread.start()
 
-    def stop(self):
+    def stop(self) -> None:
         if self._process and self._process.is_open():
             self._process.close()
             self._process = None

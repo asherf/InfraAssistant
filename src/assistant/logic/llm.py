@@ -169,7 +169,7 @@ class LLMSession:
         _logger.debug(f"LLM response: {response_content[:100]}.... ({len(response_content)})")
         self._add_message(role=ASSISTANT_ROLE, content=response_content)
 
-    def validate_api_readiness(self):
+    def validate_api_readiness(self) -> None:
         # TODO: based on the session type (promql/alerts), using the right tool call
         validate_prometheus_readiness()
 

@@ -8,7 +8,7 @@ from assistant.integrations.prometheus import get_prometheus_client
 _logger = logging.getLogger(__name__)
 
 
-def validate_function_def(function_name: str):
+def validate_function_def(function_name: str) -> None:
     # Will raise an error if the function is not found
     # TODO: use reflection to also validate the arguments
     client = get_prometheus_client()
@@ -34,7 +34,7 @@ def _call_prometheus_function(function_call: dict) -> dict | list:
     return response
 
 
-def validate_prometheus_readiness():
+def validate_prometheus_readiness() -> None:
     client = get_prometheus_client()
     try:
         client.query(query="up")

@@ -44,7 +44,7 @@ def stream_tag_extractor(on_message_callback, on_tag_callback, on_tag_start_call
     )
 
 
-def assert_tags(expected_tags: list[tuple[str, str]], actual_tags: list[tuple[str, str]], tags_stream_dict):
+def assert_tags(expected_tags: list[tuple[str, str]], actual_tags: list[tuple[str, str]], tags_stream_dict) -> None:
     assert expected_tags == actual_tags
     stream_tags = {tag: "".join(parts) for tag, parts in tags_stream_dict.items()}
     assert stream_tags == dict(expected_tags)
@@ -58,7 +58,7 @@ class TestStreamTagExtractor:
         on_message_callback,
         on_tag_callback,
         on_tag_start_callback,
-    ):
+    ) -> None:
         await stream_tag_extractor.handle_token("Hello World")
         await stream_tag_extractor.wait_for_tasks()
         assert on_message_callback.messages == ["Hello World"]
@@ -71,7 +71,7 @@ class TestStreamTagExtractor:
         on_message_callback,
         on_tag_callback,
         on_tag_start_callback,
-    ):
+    ) -> None:
         await stream_tag_extractor.handle_token("<tag>content</tag>")
         await stream_tag_extractor.wait_for_tasks()
         assert on_message_callback.messages == []
@@ -84,7 +84,7 @@ class TestStreamTagExtractor:
         on_message_callback,
         on_tag_callback,
         on_tag_start_callback,
-    ):
+    ) -> None:
         await stream_tag_extractor.handle_token("Hello <tag>content</tag> World")
         await stream_tag_extractor.wait_for_tasks()
         assert on_message_callback.messages == ["Hello ", " World"]
@@ -97,7 +97,7 @@ class TestStreamTagExtractor:
         on_message_callback,
         on_tag_callback,
         on_tag_start_callback,
-    ):
+    ) -> None:
         await stream_tag_extractor.handle_token("<tag1>content1</tag1><tag2>content2</tag2>")
         await stream_tag_extractor.wait_for_tasks()
         assert on_message_callback.messages == []
@@ -114,7 +114,7 @@ class TestStreamTagExtractor:
         on_message_callback,
         on_tag_callback,
         on_tag_start_callback,
-    ):
+    ) -> None:
         await stream_tag_extractor.handle_token("Text before <tag>content</tag>")
         await stream_tag_extractor.wait_for_tasks()
         assert on_message_callback.messages == ["Text before "]
@@ -127,7 +127,7 @@ class TestStreamTagExtractor:
         on_message_callback,
         on_tag_callback,
         on_tag_start_callback,
-    ):
+    ) -> None:
         await stream_tag_extractor.handle_token("<tag>content</tag> Text after")
         await stream_tag_extractor.wait_for_tasks()
         assert on_message_callback.messages == [" Text after"]
@@ -140,7 +140,7 @@ class TestStreamTagExtractor:
         on_message_callback,
         on_tag_callback,
         on_tag_start_callback,
-    ):
+    ) -> None:
         await stream_tag_extractor.handle_token("<tag1>content1</tag1> Text between <tag2>content2</tag2>")
         await stream_tag_extractor.wait_for_tasks()
         assert on_message_callback.messages == [" Text between "]
@@ -157,7 +157,7 @@ class TestStreamTagExtractor:
         on_message_callback,
         on_tag_callback,
         on_tag_start_callback,
-    ):
+    ) -> None:
         await stream_tag_extractor.handle_token("<tag></tag>")
         await stream_tag_extractor.wait_for_tasks()
         assert on_message_callback.messages == []
@@ -171,7 +171,7 @@ class TestStreamTagExtractor:
         on_message_callback,
         on_tag_callback,
         on_tag_start_callback,
-    ):
+    ) -> None:
         await stream_tag_extractor.handle_token("<outer><inner>content</inner></outer>")
         await stream_tag_extractor.wait_for_tasks()
         assert on_message_callback.messages == []
@@ -189,7 +189,7 @@ class TestStreamTagExtractor:
         on_message_callback,
         on_tag_callback,
         on_tag_start_callback,
-    ):
+    ) -> None:
         await stream_tag_extractor.handle_token("<tag>content")
         await stream_tag_extractor.wait_for_tasks()
         assert on_message_callback.messages == []

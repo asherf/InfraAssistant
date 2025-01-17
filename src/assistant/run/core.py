@@ -68,7 +68,7 @@ async def on_tag_start(tag_name: str, stream: Stream):
 
 @traceable
 @cl.on_chat_start
-def on_chat_start():
+def on_chat_start() -> None:
     session: LLMSession = new_llm_session(
         session_id=cl_context.session.id,
         on_message_start_cb=on_message_start,
@@ -78,7 +78,7 @@ def on_chat_start():
 
 
 @cl.on_message
-async def on_message(message: str):
+async def on_message(message: str) -> None:
     llm_session: LLMSession = cl.user_session.get("llm_session")
     user_msg = get_user_msg(message.content)
     _logger.info(f"Processing message: {user_msg}")

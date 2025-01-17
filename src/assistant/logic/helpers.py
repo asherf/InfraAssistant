@@ -56,19 +56,19 @@ class StreamHandler:
         self._add_task(self._on_tag_start_callback(tag_name, sh()))
         return queue
 
-    async def start_tag_stream(self, tag_name: str, tag_content: str):
+    async def start_tag_stream(self, tag_name: str, tag_content: str) -> None:
         assert self._tag_queue is None
         self._tag_queue = await self._create_tag_stream(tag_name)
         await self._tag_queue.put(tag_content)
 
-    async def stream_tag(self, tag_content: str):
+    async def stream_tag(self, tag_content: str) -> None:
         await self._tag_queue.put(tag_content)
 
-    async def end_tag_stream(self):
+    async def end_tag_stream(self) -> None:
         await self._tag_queue.put(None)
         self._tag_queue = None
 
-    async def maybe_send_message(self, message_buffer: list[str], is_final: bool):
+    async def maybe_send_message(self, message_buffer: list[str], is_final: bool) -> None:
         if not message_buffer:
             if is_final and self._message_queue:
                 await self._message_queue.put(None)
@@ -82,7 +82,7 @@ class StreamHandler:
             await self._message_queue.put(None)
             self._message_queue = None
 
-    async def wait_for_tasks(self):
+    async def wait_for_tasks(self) -> None:
         if not self._active_tasks:
             return
         await asyncio.gather(*self._active_tasks)
@@ -109,7 +109,7 @@ class StreamTagExtractor:
         self._on_tag_callback = on_tag_callback
         self._stream_helper = StreamHandler(on_message_callback, on_tag_start_callback)
 
-    def reset_tags_tracker(self):
+    def reset_tags_tracker(self) -> None:
         self._current_tag_name = None
         self._tag_chunk_buffer.clear()
         self._tag_chunk_buffer.append("<")
@@ -156,5 +156,5 @@ class StreamTagExtractor:
                 await self._in_tag_content(char)
         await self._maybe_send_message(is_final=True)
 
-    async def wait_for_tasks(self):
+    async def wait_for_tasks(self) -> None:
         await self._stream_helper.wait_for_tasks()
