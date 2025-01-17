@@ -27,3 +27,29 @@ dev = [
     "pytest-sugar>=1.0.0",
     "ruff>=0.8.4",
 ]
+
+[tool.ruff]
+line-length = 120
+# https://docs.astral.sh/ruff/rules/
+lint.select = [
+    "F",
+    "I",
+    "B",
+    "TRY400",
+    "RUF",
+    "ASYNC",
+    "A",
+    "C4",
+    "T10",
+    "EXE",
+    # "ISC", TODO: enable
+    "ICN",
+    "LOG",
+    "INP",
+    "T20",
+    "PIE",
+    "PYI",
+    "PT",
+    "RSE",
+    "FAST",
+]

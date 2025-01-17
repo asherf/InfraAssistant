@@ -58,9 +58,6 @@ class KubernetesServicePortForwarder:
 
         pod_name = pod.metadata.name
         _logger.info(f"Forwarding port to pod: {pod_name}")
-        import pdb
-
-        pdb.set_trace()
         resp = portforward(
             self._corev1_api.connect_get_namespaced_pod_portforward,
             name=pod_name,

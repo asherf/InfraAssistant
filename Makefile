@@ -1,9 +1,9 @@
 fmt:
-	ruff check . --fix --unsafe-fixes --select F401 --select I --select B904 --select TRY400  --select RUF006 --line-length 120
-	ruff format --line-length 120
+	ruff check . --fix --unsafe-fixes
+	ruff format
 
 lint:
-	ruff check . --select F401 --select F401 --select I --select B904 --select TRY400  --select RUF006 --line-length 120
+	ruff check . 
 
 bootstrap:
 	uv sync
