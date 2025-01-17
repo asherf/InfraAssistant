@@ -1,10 +1,6 @@
 import httpx
 
 
-def get_prometheus_client(port: int = 9095):
-    return PrometheusClient(base_url=f"http://localhost:{port}")
-
-
 class PrometheusClient:
     def __init__(self, *, base_url: str) -> None:
         self._client = httpx.Client(base_url=base_url)

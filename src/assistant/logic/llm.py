@@ -9,11 +9,7 @@ import litellm
 
 from . import prompts
 from .helpers import StreamTagExtractor, extract_json_tag_content
-from .tools import (
-    call_prometheus_functions,
-    validate_function_def,
-    validate_prometheus_readiness,
-)
+from .tools import PrometheusFunctions
 
 _logger = logging.getLogger(__name__)
 
@@ -48,16 +44,16 @@ SUPPORT_SYSTEM_MESSAGE = CURRENT_MODEL != CLAUDE_MODEL
 Stream = AsyncGenerator[str, None]
 
 
-def _get_function_defs(name: str):
+def _get_function_defs(name: str, validator: PrometheusFunctions):
     defs_path = Path(__file__).parent / f"{name}-function-defs.json"
     function_defs = json.loads(defs_path.read_text())
     for fn in function_defs:
-        validate_function_def(fn)
+        validator.validate_function_def(fn)
     return json.dumps(function_defs, indent=2)
 
 
-def get_promql_alerts_rules_assistant_prompt():
-    function_defs = _get_function_defs("metrics")
+def get_promql_alerts_rules_assistant_prompt(pf: PrometheusFunctions):
+    function_defs = _get_function_defs("metrics", validator=pf)
     return prompts.PROMQL_ALERTS_RULES_ASSISTANT_PROMPT.format(
         prometheus_functions=function_defs,
         example_function_call=json.dumps(
@@ -77,23 +73,13 @@ def get_promql_alerts_rules_assistant_prompt():
 
 def new_llm_session(*, session_id: str, on_message_start_cb, on_tag_start_cb: StreamCallback):
     _logger.info(f"Creating new LLM session for {session_id}")
-    return LLMSession(
-        session_id=session_id,
-        system_prompt=get_promql_alerts_rules_assistant_prompt(),
-        on_message_start_cb=on_message_start_cb,
-        on_tag_start_cb=on_tag_start_cb,
-    )
+    return LLMSession(session_id=session_id, on_message_start_cb=on_message_start_cb, on_tag_start_cb=on_tag_start_cb)
 
 
 class LLMSession:
-    def __init__(
-        self,
-        *,
-        session_id: str,
-        system_prompt: str,
-        on_message_start_cb,
-        on_tag_start_cb: StreamCallback,
-    ) -> None:
+    def __init__(self, *, session_id: str, on_message_start_cb, on_tag_start_cb: StreamCallback) -> None:
+        self._prometheus = PrometheusFunctions()
+        system_prompt = get_promql_alerts_rules_assistant_prompt(self._prometheus)
         self._session_id = session_id
         mh_path = Path(".message_history")
         mh_path.mkdir(parents=True, exist_ok=True)
@@ -104,7 +90,13 @@ class LLMSession:
             on_tag_start_callback=on_tag_start_cb,
         )
         self._add_message(SYSTEM_ROLE, system_prompt)
-        self.validate_api_readiness()
+        self._prometheus.validate_prometheus_readiness()
+
+    def get_welcome_message(self) -> str:
+        return f"""
+        PromeQL Alerts Assistant is ready to help you with your alerts rules.
+        Prometheus is ready at {self._prometheus.get_url()}
+        """
 
     async def process_message(self, *, incoming_message: str) -> None:
         llm_response_content_buffer = []
@@ -155,15 +147,11 @@ class LLMSession:
         _logger.debug(f"LLM response: {response_content}")
         self._add_message(role=ASSISTANT_ROLE, content=response_content)
 
-    def validate_api_readiness(self) -> None:
-        # TODO: based on the session type (promql/alerts), using the right tool call
-        validate_prometheus_readiness()
-
     def call_apis(self, fcs: list[dict]) -> str:
         # TODO: based on the session type (promql/alerts), using the right tool call
         # TODO: all of this needs to be async, probably.
         # TODO: handle errors
-        return call_prometheus_functions(fcs)
+        return self._prometheus.call_prometheus_functions(fcs)
 
     def _add_message(self, role: str, content: str):
         self._message_history.append({"role": role, "content": content})
