@@ -126,7 +126,7 @@ class LLMSession:
                 break
             remaining_calls -= 1
             llm_response_content_buffer.clear()
-            async for token in self._llm_stream_call(role=USER_ROLE, message_content=incoming_message):
+            async for token in self._llm_stream_call(role=USER_ROLE, message_content=api_responses):
                 await self._stream_extractor.handle_token(token)
                 llm_response_content_buffer.append(token)
             llm_response_content = "".join(llm_response_content_buffer)
