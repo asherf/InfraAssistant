@@ -40,5 +40,5 @@ def validate_prometheus_readiness() -> None:
         client.query(query="up")
         _logger.info(f"Prometheus is ready: {client}")
     except HTTPError as err:
-        _logger.error(f"Error validating Prometheus readiness: {err!r}")
-        raise ValueError(f"Prometheus is not ready: {err}")
+        _logger.exception(f"Error validating Prometheus readiness: {err!r}")
+        raise ValueError(f"Prometheus is not ready: {err}") from err
