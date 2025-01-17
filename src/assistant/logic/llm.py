@@ -140,7 +140,7 @@ class LLMSession:
             remaining_calls -= 1
             llm_response_content_buffer.clear()
             async for token in self._llm_stream_call(role=USER_ROLE, message_content=incoming_message):
-                self._stream_extractor.handle_token(token)
+                await self._stream_extractor.handle_token(token)
                 llm_response_content_buffer.append(token)
             llm_response_content = "".join(llm_response_content_buffer)
         if remaining_calls == 0:

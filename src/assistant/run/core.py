@@ -47,9 +47,12 @@ def get_user_msg(msg: str) -> str:
 
 async def on_message_start(stream: Stream):
     message = cl.Message(content="")
+    msg_buffer = []
     await message.send()
     async for token in stream:
+        msg_buffer.append(token)
         await message.stream_token(token)
+    _logger.info(f"Message to user: {''.join(msg_buffer)}")
     await message.update()
     return message
 
@@ -59,9 +62,11 @@ async def on_tag_start(tag_name: str, stream: Stream):
     await message.send()
     step = cl.Step(name=tag_name, parent_id=message.id)
     await step.send()
+    tag_buffer = []
     async for token in stream:
+        tag_buffer.append(token)
         await step.stream_token(token)
-
+    _logger.info(f"Tag {tag_name} content: {''.join(tag_buffer)}")
     await step.update()
     return step
 
