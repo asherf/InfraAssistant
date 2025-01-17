@@ -107,19 +107,6 @@ class LLMSession:
 
     async def process_message(self, *, incoming_message: str) -> None:
         llm_response_content_buffer = []
-        # def _handle_tag(tag_name: str, tag_content: str):
-        #     if tag_name != "function_calls":
-        #         return
-        #     fcs = extract_json_tag_content(tag_content, tag_name)
-        #     if not fcs:
-        #         _logger.info(f"No function calls found in the response: {tag_content}")
-        #         return
-        #     api_responses = self.call_apis(fcs)
-        #     _logger.info(f"API {fcs} - {api_responses[:50]}... ({len(api_responses)})")
-        #     if not api_responses:
-        #         return
-        #     self._add_message(USER_ROLE, api_responses)
-
         async for token in self._llm_stream_call(role=USER_ROLE, message_content=incoming_message):
             await self._stream_extractor.handle_token(token)
             llm_response_content_buffer.append(token)
