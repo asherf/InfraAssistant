@@ -121,7 +121,7 @@ class LLMSession:
         #     self._add_message(USER_ROLE, api_responses)
 
         async for token in self._llm_stream_call(role=USER_ROLE, message_content=incoming_message):
-            self._stream_extractor.handle_token(token)
+            await self._stream_extractor.handle_token(token)
             llm_response_content_buffer.append(token)
 
         llm_response_content = "".join(llm_response_content_buffer)
