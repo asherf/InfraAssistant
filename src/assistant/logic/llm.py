@@ -111,6 +111,8 @@ class LLMSession:
         fn = history_files[0]
         messages = json.loads(fn.read_text())
         _logger.info(f"Loaded {len(messages)} messages from {fn}")
+        while messages and messages[-1]["role"] != USER_ROLE:
+            messages.pop()
         return messages
 
     def get_welcome_message(self) -> str:
@@ -119,7 +121,17 @@ class LLMSession:
         Prometheus is ready at {self._prometheus.get_url()}
         """
 
+    async def resume_from_recent(self):
+        if len(self._message_history) <= 3:
+            _logger.info("No recent messages to resume from")
+            return
+        _logger.info(f"Resuming from recent messages ({len(self._message_history)} messages)")
+        await self._process_messages(incoming_message=None)
+
     async def process_message(self, *, incoming_message: str) -> None:
+        await self._process_messages(incoming_message=incoming_message)
+
+    async def _process_messages(self, *, incoming_message: str | None) -> None:
         llm_response_content_buffer = []
         async for token in self._llm_stream_call(message_content=incoming_message):
             await self._stream_extractor.handle_token(token)
@@ -148,8 +160,9 @@ class LLMSession:
             raise Exception("Exceeded maximum function calls per message")
 
     async def _llm_stream_call(self, message_content: str) -> Stream:
-        _logger.info(f"LLM call: {message_content[:400]}")
-        self._add_message(role=USER_ROLE, content=message_content)
+        if message_content:
+            _logger.info(f"LLM call: {message_content[:400]}")
+            self._add_message(role=USER_ROLE, content=message_content)
         response = await litellm.acompletion(
             model=CURRENT_MODEL,
             supports_system_message=SUPPORT_SYSTEM_MESSAGE,
