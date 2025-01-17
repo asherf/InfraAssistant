@@ -78,19 +78,22 @@ def new_llm_session(*, session_id: str, on_message_start_cb, on_tag_start_cb: St
 
 class LLMSession:
     def __init__(self, *, session_id: str, on_message_start_cb, on_tag_start_cb: StreamCallback) -> None:
-        self._prometheus = PrometheusFunctions()
-        system_prompt = get_promql_alerts_rules_assistant_prompt(self._prometheus)
         self._session_id = session_id
-        mh_path = Path(".message_history")
-        mh_path.mkdir(parents=True, exist_ok=True)
-        self._message_history_store = mh_path / f"{session_id}.json"
-        self._message_history = []
         self._stream_extractor = StreamTagExtractor(
             on_message_callback=on_message_start_cb,
             on_tag_start_callback=on_tag_start_cb,
         )
-        self._add_message(SYSTEM_ROLE, system_prompt)
+        self._prometheus = PrometheusFunctions()
         self._prometheus.validate_prometheus_readiness()
+        self._prepare_message_history()
+
+    def _prepare_message_history(self):
+        system_prompt = get_promql_alerts_rules_assistant_prompt(self._prometheus)
+        mh_path = Path(".message_history")
+        mh_path.mkdir(parents=True, exist_ok=True)
+        self._message_history_store = mh_path / f"{self._session_id}.json"
+        self._message_history = []
+        self._add_message(SYSTEM_ROLE, system_prompt)
 
     def get_welcome_message(self) -> str:
         return f"""
