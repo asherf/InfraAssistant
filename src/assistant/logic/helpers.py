@@ -1,8 +1,9 @@
 import asyncio
 import json
 import re
+from collections.abc import AsyncGenerator
 from enum import Enum
-from typing import AsyncGenerator, Callable
+from typing import Callable
 
 
 def extract_tag_content(text: str, tag_name: str) -> str | None:
@@ -95,7 +96,11 @@ class StreamMode(Enum):
 
 class StreamTagExtractor:
     def __init__(
-        self, *, on_message_callback, on_tag_start_callback: Callback, on_tag_callback: Callback | None = None
+        self,
+        *,
+        on_message_callback,
+        on_tag_start_callback: Callback,
+        on_tag_callback: Callback | None = None,
     ):
         self._mode = StreamMode.NORMAL
         self._current_tag_name = None

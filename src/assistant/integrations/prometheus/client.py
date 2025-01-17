@@ -47,7 +47,7 @@ class PrometheusClient:
 
     def get_metric_metadata(self, *, metric_name: str) -> dict:
         # https://prometheus.io/docs/prometheus/latest/querying/api/#querying-metric-metadata
-        response = self._client.get(f"/api/v1/metadata", params={"metric": metric_name})
+        response = self._client.get("/api/v1/metadata", params={"metric": metric_name})
         response.raise_for_status()
         return response.json()["data"]
 

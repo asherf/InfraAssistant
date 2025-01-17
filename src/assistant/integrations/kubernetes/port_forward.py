@@ -37,7 +37,7 @@ class KubernetesServicePortForwarder:
         selector = service.spec.selector
         if not selector:
             _logger.error(f"Service {self._service_name} has no selector. Cannot determine pods.")
-            return
+            return None
 
         label_selector = ",".join([f"{k}={v}" for k, v in selector.items()])
 
@@ -45,9 +45,9 @@ class KubernetesServicePortForwarder:
 
         if not pod_list.items:
             _logger.error(
-                f"No pods found for service {self._service_name} in namespace {self._namespace} with selector {selector}"
+                f"No pods found for service {self._service_name} in namespace {self._namespace} with selector {selector}",
             )
-            return
+            return None
 
         return pod_list.items[0]
 
