@@ -72,6 +72,7 @@ async def on_tag_start(tag_name: str, stream: Stream):
 @traceable
 @cl.on_chat_start
 async def on_chat_start() -> None:
+    use_recent = False
     session: LLMSession = new_llm_session(
         session_id=cl_context.session.id,
         start_from_recent=False,
@@ -81,6 +82,8 @@ async def on_chat_start() -> None:
     cl.user_session.set("llm_session", session)
     message = cl.Message(content=session.get_welcome_message())
     await message.send()
+    if use_recent:
+        await session.resume_from_recent()
 
 
 @cl.on_message
