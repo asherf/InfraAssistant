@@ -71,26 +71,47 @@ def get_promql_alerts_rules_assistant_prompt(pf: PrometheusFunctions):
     )
 
 
-def new_llm_session(*, session_id: str, on_message_start_cb, on_tag_start_cb: StreamCallback):
+def new_llm_session(*, session_id: str, start_from_recent: bool, on_message_start_cb, on_tag_start_cb: StreamCallback):
     _logger.info(f"Creating new LLM session for {session_id}")
-    return LLMSession(session_id=session_id, on_message_start_cb=on_message_start_cb, on_tag_start_cb=on_tag_start_cb)
+    return LLMSession(
+        session_id=session_id,
+        start_from_recent=start_from_recent,
+        on_message_start_cb=on_message_start_cb,
+        on_tag_start_cb=on_tag_start_cb,
+    )
 
 
 class LLMSession:
-    def __init__(self, *, session_id: str, on_message_start_cb, on_tag_start_cb: StreamCallback) -> None:
-        self._prometheus = PrometheusFunctions()
-        system_prompt = get_promql_alerts_rules_assistant_prompt(self._prometheus)
+    def __init__(
+        self, *, session_id: str, start_from_recent: bool, on_message_start_cb, on_tag_start_cb: StreamCallback
+    ) -> None:
         self._session_id = session_id
-        mh_path = Path(".message_history")
-        mh_path.mkdir(parents=True, exist_ok=True)
-        self._message_history_store = mh_path / f"{session_id}.json"
-        self._message_history = []
         self._stream_extractor = StreamTagExtractor(
             on_message_callback=on_message_start_cb,
             on_tag_start_callback=on_tag_start_cb,
         )
-        self._add_message(SYSTEM_ROLE, system_prompt)
+        self._prometheus = PrometheusFunctions()
         self._prometheus.validate_prometheus_readiness()
+        self._prepare_message_history(start_from_recent)
+
+    def _prepare_message_history(self, start_from_recent: bool):
+        mh_path = Path(".message_history")
+        mh_path.mkdir(parents=True, exist_ok=True)
+        self._message_history_store = mh_path / f"{self._session_id}.json"
+        system_prompt = get_promql_alerts_rules_assistant_prompt(self._prometheus)
+        self._message_history = []
+        self._add_message(SYSTEM_ROLE, system_prompt)
+        if start_from_recent:
+            self._message_history.extend(self._get_latest_history(mh_path) or [])
+
+    def _get_latest_history(self, mh_path: Path) -> list[dict] | None:
+        history_files = sorted(mh_path.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if not history_files:
+            return
+        fn = history_files[0]
+        messages = json.loads(fn.read_text())
+        _logger.info(f"Loaded {len(messages)} messages from {fn}")
+        return messages
 
     def get_welcome_message(self) -> str:
         return f"""
@@ -127,7 +148,7 @@ class LLMSession:
             raise Exception("Exceeded maximum function calls per message")
 
     async def _llm_stream_call(self, message_content: str) -> Stream:
-        _logger.info(f"LLM call: {message_content})")
+        _logger.info(f"LLM call: {message_content[:400]}")
         self._add_message(role=USER_ROLE, content=message_content)
         response = await litellm.acompletion(
             model=CURRENT_MODEL,
