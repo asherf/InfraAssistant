@@ -1,21 +1,19 @@
 import json
 import logging
 from collections.abc import AsyncGenerator
-from copy import deepcopy
 from pathlib import Path
 from typing import Callable
 
 import litellm
 
 from . import prompts
+from .constants import ASSISTANT_ROLE, USER_ROLE
 from .helpers import StreamTagExtractor, extract_json_tag_content
+from .message_history import MessageHistory
 from .tools import PrometheusFunctions
 
 _logger = logging.getLogger(__name__)
 
-SYSTEM_ROLE = "system"
-USER_ROLE = "user"
-ASSISTANT_ROLE = "assistant"
 
 Stream = AsyncGenerator[str, None]
 StreamCallback = Callable[[Stream], None]
@@ -52,7 +50,7 @@ def _get_function_defs(name: str, validator: PrometheusFunctions):
     return json.dumps(function_defs, indent=2)
 
 
-def get_promql_alerts_rules_assistant_prompt(pf: PrometheusFunctions):
+def get_promql_alerts_rules_assistant_prompt(pf: PrometheusFunctions) -> str:
     function_defs = _get_function_defs("metrics", validator=pf)
     return prompts.PROMQL_ALERTS_RULES_ASSISTANT_PROMPT.format(
         prometheus_functions=function_defs,
@@ -92,28 +90,10 @@ class LLMSession:
         )
         self._prometheus = PrometheusFunctions()
         self._prometheus.validate_prometheus_readiness()
-        self._prepare_message_history(start_from_recent)
-
-    def _prepare_message_history(self, start_from_recent: bool):
-        mh_path = Path(".message_history")
-        mh_path.mkdir(parents=True, exist_ok=True)
-        self._message_history_store = mh_path / f"{self._session_id}.json"
         system_prompt = get_promql_alerts_rules_assistant_prompt(self._prometheus)
-        self._message_history = []
-        self._add_message(SYSTEM_ROLE, system_prompt)
+        self._msg_history = MessageHistory(system_prompt=system_prompt, session_id=session_id)
         if start_from_recent:
-            self._message_history.extend(self._get_latest_history(mh_path) or [])
-
-    def _get_latest_history(self, mh_path: Path) -> list[dict] | None:
-        history_files = sorted(mh_path.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-        if not history_files:
-            return
-        fn = history_files[0]
-        messages = json.loads(fn.read_text())
-        _logger.info(f"Loaded {len(messages)} messages from {fn}")
-        while messages and messages[-1]["role"] != USER_ROLE:
-            messages.pop()
-        return messages
+            self._msg_history.load_recent_session_messages()
 
     def get_welcome_message(self) -> str:
         return f"""
@@ -122,10 +102,10 @@ class LLMSession:
         """
 
     async def resume_from_recent(self):
-        if len(self._message_history) <= 3:
+        if self._msg_history.can_resume_from_recent():
             _logger.info("No recent messages to resume from")
             return
-        _logger.info(f"Resuming from recent messages ({len(self._message_history)} messages)")
+        _logger.info(f"Resuming from recent messages ({self._msg_history.message_count()} messages)")
         await self._process_messages(incoming_message=None)
 
     async def process_message(self, *, incoming_message: str) -> None:
@@ -162,11 +142,11 @@ class LLMSession:
     async def _llm_stream_call(self, message_content: str) -> Stream:
         if message_content:
             _logger.info(f"LLM call: {message_content[:400]}")
-            self._add_message(role=USER_ROLE, content=message_content)
+            self._msg_history.add_message(role=USER_ROLE, content=message_content)
         response = await litellm.acompletion(
             model=CURRENT_MODEL,
             supports_system_message=SUPPORT_SYSTEM_MESSAGE,
-            messages=deepcopy(self._message_history),  # litellm will modify this list, so we need to pass a copy
+            messages=self._msg_history.get_messages_history(),
             stream=True,
             temperature=DEFAULT_TEMPERATURE,
             max_tokens=1000,
@@ -179,17 +159,10 @@ class LLMSession:
 
         response_content = "".join(response_buffer)
         _logger.debug(f"LLM response: {response_content}")
-        self._add_message(role=ASSISTANT_ROLE, content=response_content)
+        self._msg_history.add_message(role=ASSISTANT_ROLE, content=response_content)
 
     def call_apis(self, fcs: list[dict]) -> str:
         # TODO: based on the session type (promql/alerts), using the right tool call
         # TODO: all of this needs to be async, probably.
         # TODO: handle errors
         return self._prometheus.call_prometheus_functions(fcs)
-
-    def _add_message(self, role: str, content: str):
-        self._message_history.append({"role": role, "content": content})
-        # Don't store the system prompt in the message history
-        msgs_to_save = self._message_history[1:]
-        if msgs_to_save:
-            self._message_history_store.write_text(json.dumps(msgs_to_save, indent=2))
