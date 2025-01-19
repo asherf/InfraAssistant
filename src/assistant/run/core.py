@@ -53,8 +53,9 @@ async def on_message_start(stream: Stream):
         await message.stream_token(token)
     msg_Content = "".join(msg_buffer).strip()
     if not msg_Content:
+        await message.remove()
         return
-    _logger.info(f"Message: {''.join(msg_buffer)}")
+    # _logger.info(f"Message: {''.join(msg_buffer)}")
     await message.update()
 
 
